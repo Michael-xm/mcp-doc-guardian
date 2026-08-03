@@ -8,7 +8,7 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"/></a>
     <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/protocol-MCP-green.svg" alt="MCP"/>
-    <img src="https://img.shields.io/badge/tools-19-orange.svg" alt="Tools"/>
+    <img src="https://img.shields.io/badge/tools-18-orange.svg" alt="Tools"/>
   </p>
 </p>
 
@@ -39,7 +39,7 @@ AI:   [calls check_api_sync]
 **Step 1 — Build**
 
 ```bash
-cd doc-guard/mcp-doc-guard
+cd mcp-doc-guardian/mcp-doc-guard
 npm install && npm run build
 ```
 
@@ -52,7 +52,7 @@ Add to your MCP config (CodeBuddy / Cursor / Claude Desktop):
   "mcpServers": {
     "doc-guardian": {
       "command": "node",
-      "args": ["/absolute/path/to/doc-guard/mcp-doc-guard/dist/index.js"],
+      "args": ["/absolute/path/to/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
         "DOCGUARD_ROOT": "/absolute/path/to/your/workspace"
       }
@@ -102,7 +102,7 @@ That's it. The guardian is watching.
 
 ---
 
-## All 19 tools
+## All 18 tools
 
 <details>
 <summary>L0 — Atomic tools (expand)</summary>
@@ -148,6 +148,7 @@ Minimal `.doc-guard.yaml` to get started:
 schema_version: "1.0"
 project: my-server
 type: java-spring          # or: vue-ts, go, python, react-ts, uniapp
+mode: standalone
 
 docs:
   changelog:
@@ -183,12 +184,13 @@ skill:
 ## Project layout
 
 ```
-doc-guard/
+mcp-doc-guardian/
 ├── mcp-doc-guard/        ← MCP server (build this)
-│   └── src/tools/        ← 19 tool implementations
+│   └── src/tools/        ← 18 tool implementations
 ├── scripts/
 │   ├── setup-all.sh      ← one-click init
-│   └── setup-project.sh  ← per-project config generator
+│   ├── setup-project.sh  ← per-project config generator
+│   └── doc-guard-init.sh ← interactive init wizard
 └── docs/agents/          ← AI agent prompt templates
 ```
 

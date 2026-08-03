@@ -31,9 +31,9 @@ bash "$SCRIPT_DIR/setup-skills.sh"
 # ── [3/5] 安装 git post-merge hook ──────────────────────────
 echo ""
 echo ">>> [3/5] 安装 git hooks..."
-GIT_DIR="$REPO_ROOT/.git"
-if [ -d "$GIT_DIR" ]; then
-  HOOKS_DIR="$GIT_DIR/hooks"
+GIT_HOOKS_DIR="$REPO_ROOT/.git"
+if [ -d "$GIT_HOOKS_DIR" ]; then
+  HOOKS_DIR="$GIT_HOOKS_DIR/hooks"
   mkdir -p "$HOOKS_DIR"
   HOOK_FILE="$HOOKS_DIR/post-merge"
 
@@ -48,7 +48,7 @@ REVIEW_FILE=$(find "$REVIEW_DIR" -name "*.md" -not -name ".gitkeep" 2>/dev/null 
 
 if [ -n "$REVIEW_FILE" ]; then
   echo "[doc-guard] 检测到待审查变更，触发 Agent2..."
-  SCRIPT_DIR="$(git rev-parse --show-toplevel)/doc-guard/scripts"
+  SCRIPT_DIR="$(git rev-parse --show-toplevel)/mcp-doc-guardian/scripts"
   if [ -f "$SCRIPT_DIR/notify-agent2.js" ]; then
     node "$SCRIPT_DIR/notify-agent2.js" "$REVIEW_FILE"
   else
@@ -67,7 +67,7 @@ HOOK
   chmod +x "$HOOK_FILE"
   echo "    已安装: $HOOK_FILE"
 else
-  echo "    [WARN] 未找到 .git 目录（$GIT_DIR），跳过 hook 安装"
+  echo "    [WARN] 未找到 .git 目录（${GIT_HOOKS_DIR}），跳过 hook 安装"
   echo "    手动安装：将 .git/hooks/post-merge 内容复制自方案 6.5 节"
 fi
 
@@ -112,8 +112,8 @@ echo "================================================"
 echo "  初始化完成！"
 echo ""
 echo "  下一步："
-echo "  1. 运行交互式配置：bash scripts/doc-guard-init.sh"
-echo "     或手动：bash scripts/gen-project-config.sh <project> <type> <dir>"
+  echo "  1. 运行交互式配置：bash scripts/doc-guard-init.sh"
+echo "     或手动：bash scripts/setup-project.sh <project> <type> <dir>"
 echo "  2. IDE MCP 配置已生成：.codebuddy/mcp.json"
 echo "     Cursor 配置已生成：\$REPO_ROOT/.cursor/mcp.json"
 echo "  3. 在 AI Agent 对话框发送：请执行 doc_cold_start"

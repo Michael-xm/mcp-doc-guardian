@@ -132,6 +132,10 @@ for project in "${DETECTED_PROJECTS[@]}"; do
   case "${ptype}" in
     java-spring|java-gradle)
       docs_section='docs:
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    format: keepachangelog
   api:
     path: docs/api.md
     triggers:
@@ -144,12 +148,14 @@ for project in "${DETECTED_PROJECTS[@]}"; do
       - "**/*Mapper.xml"
   overview:
     path: docs/overview.md
-    triggers: []
-  changelog:
-    path: docs/changelogs/changelog.md'
+    triggers: []'
       ;;
     vue-ts|react-ts)
       docs_section='docs:
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    format: keepachangelog
   api:
     path: docs/api.md
     triggers:
@@ -158,12 +164,14 @@ for project in "${DETECTED_PROJECTS[@]}"; do
     path: docs/overview.md
     triggers:
       - "src/**/*.vue"
-      - "src/**/*.tsx"
-  changelog:
-    path: docs/changelogs/changelog.md'
+      - "src/**/*.tsx"'
       ;;
     uniapp)
       docs_section='docs:
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    format: keepachangelog
   api:
     path: docs/api.md
     triggers:
@@ -173,55 +181,80 @@ for project in "${DETECTED_PROJECTS[@]}"; do
   overview:
     path: docs/overview.md
     triggers:
-      - "pages/**/*.vue"
-  changelog:
-    path: docs/changelogs/changelog.md'
+      - "pages/**/*.vue"'
       ;;
     go)
       docs_section='docs:
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    format: keepachangelog
   api:
     path: docs/api.md
     triggers:
       - "**/*.go"
   overview:
     path: docs/overview.md
-    triggers: []
-  changelog:
-    path: docs/changelogs/changelog.md'
+    triggers: []'
       ;;
     python)
       docs_section='docs:
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    format: keepachangelog
   api:
     path: docs/api.md
     triggers:
       - "**/*.py"
   overview:
     path: docs/overview.md
-    triggers: []
-  changelog:
-    path: docs/changelogs/changelog.md'
+    triggers: []'
       ;;
     *)
       docs_section='docs:
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    format: keepachangelog
   api:
     path: docs/api.md
     triggers: []
   overview:
     path: docs/overview.md
-    triggers: []
-  changelog:
-    path: docs/changelogs/changelog.md'
+    triggers: []'
       ;;
   esac
+
+  # java 类型额外需要 controller 字段
+  controller_section=""
+  if [ "${ptype}" = "java-spring" ] || [ "${ptype}" = "java-gradle" ]; then
+    controller_section='controller:
+  pattern: "src/main/java/**/*Controller.java"
+  annotation_regex: "@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)"
+'
+  fi
+
+  # 非 java 类型需要 api_call 字段
+  api_call_section=""
+  if [ "${ptype}" != "java-spring" ] && [ "${ptype}" != "java-gradle" ]; then
+    api_call_section='api_call:
+  pattern: "src/**/*.{ts,vue,js}"
+  call_regex: "(http|request|api)\\.(get|post|put|delete|patch)\\("
+'
+  fi
 
   # 写入 YAML
   cat > "${yaml_path}" <<EOF
 # .doc-guard.yaml - 由 doc-guard-init.sh 生成
 # Doc-Guard v5.8 配置文件
+schema_version: "1.0"
 project: ${project}
 type: ${ptype}
+mode: standalone
+description: ""
 
-${docs_section}
+${controller_section}${api_call_section}${docs_section}
 
 team:
   my_role: agent1-implementer
@@ -232,10 +265,6 @@ team:
 skill:
   allow_doc_write: ${use_stub}
   changelog_format: "- [{status}][{date}] {description}"
-
-coverage_baseline:
-  api: warn
-  database: warn
 EOF
 
   # 创建文档目录结构

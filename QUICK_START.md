@@ -1,6 +1,6 @@
 # 5 分钟上手 mcp-doc-guardian
 
-> 跟着下面 5 步走，你的 AI Agent 就能开始自动守护文档了。
+> 跟着下面 4 步走，你的 AI Agent 就能开始自动守护文档了。
 
 ---
 
@@ -18,23 +18,12 @@
 
 ```bash
 git clone https://github.com/Michael-xm/mcp-doc-guardian
-cd mcp-doc-guardian/doc-guard
+cd mcp-doc-guardian
 ```
 
 ---
 
-## 第二步：构建 MCP Server
-
-```bash
-cd mcp-doc-guard
-npm install && npm run build
-```
-
-看到 `mcp-doc-guardian@1.0.0 build` 且无报错，说明构建成功。
-
----
-
-## 第三步：接入你的 IDE
+## 第二步：接入你的 IDE
 
 根据你用的工具，选择对应方式：
 
@@ -52,7 +41,7 @@ MCP 配置内容（`{{REPO_ROOT}}` 替换为你的工作区绝对路径）：
   "mcpServers": {
     "doc-guardian": {
       "command": "node",
-      "args": ["/绝对路径/doc-guard/mcp-doc-guard/dist/index.js"],
+      "args": ["/绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
         "DOCGUARD_ROOT": "/绝对路径/你的工作区"
       }
@@ -63,7 +52,7 @@ MCP 配置内容（`{{REPO_ROOT}}` 替换为你的工作区绝对路径）：
 
 ---
 
-## 第四步：为你的项目生成配置
+## 第三步：为你的项目生成配置
 
 ```bash
 # 格式：./scripts/setup-project.sh <项目名> <技术栈> <项目路径>
@@ -75,7 +64,7 @@ MCP 配置内容（`{{REPO_ROOT}}` 替换为你的工作区绝对路径）：
 
 ---
 
-## 第五步：让 AI 初始化文档
+## 第四步：让 AI 初始化文档
 
 在 AI 对话框中发送：
 

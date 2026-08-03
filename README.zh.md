@@ -8,7 +8,7 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"/></a>
     <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/protocol-MCP-green.svg" alt="MCP"/>
-    <img src="https://img.shields.io/badge/工具数-19-orange.svg" alt="Tools"/>
+    <img src="https://img.shields.io/badge/工具数-18-orange.svg" alt="Tools"/>
   </p>
 </p>
 
@@ -39,7 +39,7 @@ AI：  [调用 check_api_sync]
 **第一步 — 构建**
 
 ```bash
-cd doc-guard/mcp-doc-guard
+cd mcp-doc-guardian/mcp-doc-guard
 npm install && npm run build
 ```
 
@@ -52,7 +52,7 @@ npm install && npm run build
   "mcpServers": {
     "doc-guardian": {
       "command": "node",
-      "args": ["/绝对路径/doc-guard/mcp-doc-guard/dist/index.js"],
+      "args": ["/绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
         "DOCGUARD_ROOT": "/绝对路径/你的工作区"
       }
@@ -102,7 +102,7 @@ npm install && npm run build
 
 ---
 
-## 全部 19 个工具
+## 全部 18 个工具
 
 <details>
 <summary>L0 — 原子操作工具（点击展开）</summary>
@@ -148,6 +148,7 @@ npm install && npm run build
 schema_version: "1.0"
 project: my-server
 type: java-spring          # 可选：vue-ts, go, python, react-ts, uniapp
+mode: standalone
 
 docs:
   changelog:
@@ -183,12 +184,13 @@ skill:
 ## 项目结构
 
 ```
-doc-guard/
+mcp-doc-guardian/
 ├── mcp-doc-guard/        ← MCP Server（需要构建这个）
-│   └── src/tools/        ← 19 个工具实现
+│   └── src/tools/        ← 18 个工具实现
 ├── scripts/
 │   ├── setup-all.sh      ← 一键初始化
-│   └── setup-project.sh  ← 生成项目配置模板
+│   ├── setup-project.sh  ← 生成项目配置模板
+│   └── doc-guard-init.sh ← 交互式初始化向导
 └── docs/agents/          ← AI Agent 提示词模板
 ```
 
