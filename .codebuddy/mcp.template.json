@@ -2,7 +2,7 @@
   "mcpServers": {
     "doc-guard": {
       "command": "node",
-      "args": ["{{REPO_ROOT}}/doc-guard/mcp-doc-guard/dist/index.js"],
+      "args": ["{{REPO_ROOT}}/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
         "DOCGUARD_ROOT": "{{REPO_ROOT}}"
       }

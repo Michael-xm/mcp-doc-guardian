@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "doc-guard": {
+      "command": "node",
+      "args": ["/Users/mengxiaomin/Desktop/work/qh/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
+      "env": {
+        "DOCGUARD_ROOT": "/Users/mengxiaomin/Desktop/work/qh"
+      }
+    }
+  }
+}

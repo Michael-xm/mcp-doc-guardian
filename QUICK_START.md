@@ -23,32 +23,133 @@ cd mcp-doc-guardian
 
 ---
 
-## 第二步：接入你的 IDE
+## 第二步：构建并接入你的 IDE
 
-根据你用的工具，选择对应方式：
+### 2.1 构建 MCP Server
 
-| 工具 | 操作 |
-|------|------|
-| **CodeBuddy** | 运行 `./scripts/setup-all.sh`，自动生成 `.codebuddy/mcp.json` |
-| **Cursor** | 复制 `.codebuddy/mcp.template.json` → 替换 `{{REPO_ROOT}}` → 保存为 `.cursor/mcp.json` |
-| **Claude Code CLI** | 启动时加参数：`--mcp-config /path/to/replaced-mcp.json` |
-| **VS Code + Cline** | 参考 Cline 文档，使用模板文件手动配置 |
+```bash
+# 在 mcp-doc-guardian 目录下运行，自动完成 build + skills + git hooks + MCP 配置
+./scripts/setup-all.sh
+```
 
-MCP 配置内容（`{{REPO_ROOT}}` 替换为你的工作区绝对路径）：
+看到如下输出说明成功：
+
+```
+>>> [1/5] 构建 MCP Server...
+    MCP Server 构建完成
+>>> [2/5] 设置 Agent Skills...
+    Skills 安装完成
+>>> [3/5] 安装 git hooks...
+    git hooks 安装完成
+>>> [4/5] 生成 MCP 配置...
+    MCP 配置已生成：.codebuddy/mcp.json
+>>> [5/5] 完成！
+```
+
+---
+
+### 2.2 接入 IDE
+
+根据你使用的工具，选择对应方式：
+
+---
+
+#### CodeBuddy（推荐）
+
+`setup-all.sh` 已自动生成 `.codebuddy/mcp.json`，只需在 CodeBuddy 中加载：
+
+1. 打开 CodeBuddy → 点击顶部菜单「MCP」
+2. 点击右上角 `+ 配置 MCP`
+3. 将以下内容粘贴进去（路径已自动填好）：
 
 ```json
 {
   "mcpServers": {
-    "doc-guardian": {
+    "doc-guard": {
       "command": "node",
-      "args": ["/绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
+      "args": ["/你的工作区绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
-        "DOCGUARD_ROOT": "/绝对路径/你的工作区"
+        "DOCGUARD_ROOT": "/你的工作区绝对路径"
       }
     }
   }
 }
 ```
+
+> 直接复制 `.codebuddy/mcp.json` 的内容粘贴即可，路径已由 `setup-all.sh` 替换好。
+
+4. 点击保存，「我的 MCP」列表中出现 `doc-guard` 即为成功。
+
+---
+
+#### Cursor
+
+1. 复制模板文件：
+
+```bash
+cp .codebuddy/mcp.template.json .cursor/mcp.json
+```
+
+2. 打开 `.cursor/mcp.json`，将 `{{REPO_ROOT}}` 替换为你的工作区绝对路径：
+
+```bash
+# macOS / Linux 一键替换
+sed -i '' "s|{{REPO_ROOT}}|$(dirname $(pwd))|g" .cursor/mcp.json
+```
+
+3. 重启 Cursor，在「Settings → MCP」中确认 `doc-guard` 已出现。
+
+---
+
+#### Claude Code CLI
+
+1. 先生成配置文件：
+
+```bash
+REPO_ROOT="$(dirname $(pwd))"
+sed "s|{{REPO_ROOT}}|$REPO_ROOT|g" .codebuddy/mcp.template.json > /tmp/doc-guard-mcp.json
+```
+
+2. 启动时加载：
+
+```bash
+claude --mcp-config /tmp/doc-guard-mcp.json
+```
+
+或写入 `~/.claude/mcp.json` 永久生效：
+
+```bash
+cp /tmp/doc-guard-mcp.json ~/.claude/mcp.json
+```
+
+---
+
+#### VS Code + Cline
+
+1. 打开 VS Code → 侧边栏点击 Cline 图标 → 点击右上角齿轮 → 「MCP Servers」→「Edit MCP Settings」
+2. 在打开的 `cline_mcp_settings.json` 中添加：
+
+```json
+{
+  "mcpServers": {
+    "doc-guard": {
+      "command": "node",
+      "args": ["/你的工作区绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
+      "env": {
+        "DOCGUARD_ROOT": "/你的工作区绝对路径"
+      }
+    }
+  }
+}
+```
+
+3. 保存文件，Cline 会自动重新加载 MCP 配置。
+
+---
+
+> **工作区绝对路径**：指包含 `mcp-doc-guardian` 的父目录，例如你的项目根目录是 `/Users/yourname/work/qh`，则：
+> - `args` 路径为：`/Users/yourname/work/qh/mcp-doc-guardian/mcp-doc-guard/dist/index.js`
+> - `DOCGUARD_ROOT` 为：`/Users/yourname/work/qh`
 
 ---
 
