@@ -42,29 +42,25 @@ docs:
     triggers: ["feat", "fix", "refactor"]
 
   api:
-    path: docs/project/api.md
+    path: docs/api.md
     triggers: ["controller", "service"]
     path_extract_regex: '(@RequestMapping|@GetMapping|@PostMapping)\("([^"]+)"\)'
     auto_write: stub_only
     note: "RESTful API 文档"
 
   database:
-    path: docs/project/database.md
+    path: docs/database.md
     triggers: ["entity", "mapper", "migration"]
     entity_pattern: "src/main/java/**/*Entity.java"
     migration_pattern: "src/main/resources/db/migration/*.sql"
 
   overview:
-    path: docs/project/overview.md
+    path: docs/overview.md
     triggers: ["pom", "application.yml", "build.gradle"]
 
-# skill:
-#   extra_triggers: []
-#   allow_doc_write: stub_only
-
-# coverage_baseline:
-#   api: 0.8
-#   database: 0.7
+skill:
+  allow_doc_write: stub_only
+  extra_triggers: []
 YAML
     ;;
 
@@ -87,16 +83,17 @@ docs:
     format: keepachangelog
 
   api:
-    path: docs/project/api.md
+    path: docs/api.md
     triggers: ["api", "request"]
     auto_write: stub_only
 
   overview:
-    path: docs/project/overview.md
+    path: docs/overview.md
     triggers: ["package.json", "vite.config"]
 
-# skill:
-#   allow_doc_write: stub_only
+skill:
+  allow_doc_write: stub_only
+  extra_triggers: []
 YAML
     ;;
 
@@ -119,13 +116,17 @@ docs:
     format: keepachangelog
 
   api:
-    path: docs/project/api.md
+    path: docs/api.md
     triggers: ["handler", "router"]
     auto_write: stub_only
 
   overview:
-    path: docs/project/overview.md
+    path: docs/overview.md
     triggers: ["go.mod", "main.go"]
+
+skill:
+  allow_doc_write: stub_only
+  extra_triggers: []
 YAML
     ;;
 
@@ -148,13 +149,17 @@ docs:
     format: keepachangelog
 
   api:
-    path: docs/project/api.md
+    path: docs/api.md
     triggers: ["router", "view", "api"]
     auto_write: stub_only
 
   overview:
-    path: docs/project/overview.md
+    path: docs/overview.md
     triggers: ["requirements.txt", "setup.py", "pyproject.toml"]
+
+skill:
+  allow_doc_write: stub_only
+  extra_triggers: []
 YAML
     ;;
 
@@ -177,13 +182,17 @@ docs:
     format: keepachangelog
 
   api:
-    path: docs/project/api.md
+    path: docs/api.md
     triggers: ["api", "service", "hook"]
     auto_write: stub_only
 
   overview:
-    path: docs/project/overview.md
+    path: docs/overview.md
     triggers: ["package.json", "tsconfig.json"]
+
+skill:
+  allow_doc_write: stub_only
+  extra_triggers: []
 YAML
     ;;
 
