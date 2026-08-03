@@ -253,7 +253,7 @@ for project in "${DETECTED_PROJECTS[@]}"; do
   if [ "${ptype}" = "java-spring" ] || [ "${ptype}" = "java-gradle" ]; then
     controller_section='controller:
   pattern: "src/main/java/**/*Controller.java"
-  annotation_regex: "@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)"
+  annotation_regex: '\''@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)'\''
 '
   fi
 
@@ -262,7 +262,7 @@ for project in "${DETECTED_PROJECTS[@]}"; do
   if [ "${ptype}" != "java-spring" ] && [ "${ptype}" != "java-gradle" ]; then
     api_call_section='api_call:
   pattern: "src/**/*.{ts,vue,js}"
-  call_regex: "(http|request|api)\\.(get|post|put|delete|patch)\\("
+  call_regex: '\''(http|request|api)\.(get|post|put|delete|patch)\('\''
 '
   fi
 

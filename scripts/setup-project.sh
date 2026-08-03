@@ -31,7 +31,7 @@ description: ""
 
 controller:
   pattern: "src/main/java/**/*Controller.java"
-  annotation_regex: "@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)"
+  annotation_regex: '@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)'
 
 docs:
   changelog:
@@ -78,7 +78,7 @@ description: ""
 
 api_call:
   pattern: "src/api/**/*.ts"
-  call_regex: "(http|request|api)\\.(get|post|put|delete|patch)\\("
+  call_regex: '(http|request|api)\.(get|post|put|delete|patch)\('
 
 docs:
   changelog:
@@ -110,7 +110,7 @@ description: ""
 
 api_call:
   pattern: "**/*.go"
-  call_regex: "\\.(GET|POST|PUT|DELETE|PATCH)\\("
+  call_regex: '\.(GET|POST|PUT|DELETE|PATCH)\('
 
 docs:
   changelog:
@@ -139,7 +139,7 @@ description: ""
 
 api_call:
   pattern: "**/*.py"
-  call_regex: "@(app|router)\\.(get|post|put|delete|patch)"
+  call_regex: '@(app|router)\.(get|post|put|delete|patch)'
 
 docs:
   changelog:
@@ -168,7 +168,7 @@ description: ""
 
 api_call:
   pattern: "src/**/*.{ts,tsx}"
-  call_regex: "fetch\\(|axios\\.(get|post|put|delete|patch)"
+  call_regex: 'fetch\(|axios\.(get|post|put|delete|patch)'
 
 docs:
   changelog:
