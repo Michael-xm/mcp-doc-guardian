@@ -28,7 +28,29 @@ echo ""
 echo "[步骤2] 自动扫描子项目和技术栈..."
 
 declare -a DETECTED_PROJECTS=()
-declare -A DETECTED_TYPES=()
+declare -a DETECTED_TYPES_ARR=()   # 与 DETECTED_PROJECTS 等长的并行数组，bash 3.2 兼容
+
+# 按项目名获取类型
+get_type() {
+  local project="$1" i
+  for i in "${!DETECTED_PROJECTS[@]}"; do
+    if [ "${DETECTED_PROJECTS[$i]}" = "$project" ]; then
+      echo "${DETECTED_TYPES_ARR[$i]}"
+      return
+    fi
+  done
+}
+
+# 按项目名更新类型
+set_type() {
+  local project="$1" type="$2" i
+  for i in "${!DETECTED_PROJECTS[@]}"; do
+    if [ "${DETECTED_PROJECTS[$i]}" = "$project" ]; then
+      DETECTED_TYPES_ARR[$i]="$type"
+      return
+    fi
+  done
+}
 
 detect_type() {
   local dir="$1"
@@ -64,7 +86,7 @@ while IFS= read -r -d '' dir; do
      [ -f "${dir}/build.gradle" ]; then
     detected_t=$(detect_type "${dir}")
     DETECTED_PROJECTS+=("${project_name}")
-    DETECTED_TYPES["${project_name}"]="${detected_t}"
+    DETECTED_TYPES_ARR+=("${detected_t}")
     echo "  发现: ${project_name} (${detected_t})"
   fi
 done < <(find "${DOCGUARD_ROOT}" -maxdepth 1 -mindepth 1 -type d -print0)
@@ -76,7 +98,7 @@ if [ ${#DETECTED_PROJECTS[@]} -eq 0 ]; then
   echo -n "  技术栈类型 (java-spring/java-gradle/vue-ts/uniapp/go/python/react-ts): "
   read -r ptype
   DETECTED_PROJECTS=("${pname}")
-  DETECTED_TYPES["${pname}"]="${ptype}"
+  DETECTED_TYPES_ARR=("${ptype}")
 fi
 
 # ──────────────────────────────────────────────
@@ -85,11 +107,11 @@ fi
 echo ""
 echo "=== 自动识别结果，请确认（直接回车接受，输入修正值后回车覆盖）==="
 for project in "${DETECTED_PROJECTS[@]}"; do
-  current_type="${DETECTED_TYPES[$project]}"
+  current_type="$(get_type "${project}")"
   echo -n "  ${project}: 检测为 ${current_type}  正确类型 [回车接受]: "
   read -r correction
   if [ -n "${correction}" ]; then
-    DETECTED_TYPES["${project}"]="${correction}"
+    set_type "${project}" "${correction}"
     echo "  → 已修正为: ${correction}"
   fi
 done
@@ -115,7 +137,7 @@ for project in "${DETECTED_PROJECTS[@]}"; do
     fi
   fi
 
-  ptype="${DETECTED_TYPES[$project]}"
+  ptype="$(get_type "${project}")"
   echo "  配置 ${project} (${ptype})..."
 
   # 询问是否启用 stub_only（v5.6 新增）
