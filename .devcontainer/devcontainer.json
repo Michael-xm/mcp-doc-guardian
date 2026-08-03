@@ -1,0 +1,33 @@
+{
+  "name": "mcp-doc-guard dev",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "postCreateCommand": "cd mcp-doc-guard && npm install && npm run build",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "typescript.tsdk": "mcp-doc-guard/node_modules/typescript/lib",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  },
+  "remoteEnv": {
+    "DOCGUARD_ROOT": "${containerWorkspaceFolder}"
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.codebuddy,target=/root/.codebuddy,type=bind,consistency=cached"
+  ],
+  "forwardPorts": []
+}

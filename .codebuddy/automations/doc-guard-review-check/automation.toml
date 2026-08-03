@@ -1,0 +1,4 @@
+name = "doc-guard-review-check"
+prompt = "调用 project_change_list({ status: 'ready_for_review' })，若有待审查变更，按 docs/agents/reviewer-prompt.md SOP 执行 Agent2 验收流程。"
+rrule = "FREQ=HOURLY;INTERVAL=1"
+status = "ACTIVE"

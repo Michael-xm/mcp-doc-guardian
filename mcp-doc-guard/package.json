@@ -1,0 +1,37 @@
+{
+  "name": "mcp-doc-guardian",
+  "version": "1.0.0",
+  "description": "MCP server to guard, sync, and enforce your project documentation — built for AI-native teams.",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-doc-guardian": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest --passWithNoTests",
+    "validate": "node dist/index.js --validate-only"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ajv": "^8.12.0",
+    "glob": "^10.3.10",
+    "js-yaml": "^4.1.0",
+    "minimatch": "^9.0.4"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/minimatch": "^5.1.2",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": ["**/*.test.ts"]
+  }
+}

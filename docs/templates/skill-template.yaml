@@ -1,0 +1,105 @@
+name: doc-guard
+description: |
+  文档守护 Agent Skill — 在代码变更时自动触发文档同步检查与更新流程。
+  适用于使用 mcp-doc-guardian MCP Server 的项目。
+
+version: "5.8"
+
+triggers:
+  keywords:
+    # 功能开发
+    - "新增"
+    - "添加功能"
+    - "实现"
+    - "开发"
+    - "feature"
+    - "feat"
+    # Bug修复
+    - "修复"
+    - "fix"
+    - "bug"
+    - "错误"
+    # 重构
+    - "重构"
+    - "refactor"
+    - "优化"
+    - "改造"
+    # 接口变更
+    - "接口"
+    - "API"
+    - "Controller"
+    - "路由"
+    - "endpoint"
+    # 数据库
+    - "数据库"
+    - "Entity"
+    - "Mapper"
+    - "migration"
+    - "表结构"
+    # 通用代码变更
+    - "代码变更"
+    - "代码修改"
+    - "提交"
+    - "merge"
+    - "PR"
+    - "代码审查"
+    # [extra_triggers_placeholder]
+
+  file_patterns:
+    - "**/*.java"
+    - "**/*.ts"
+    - "**/*.vue"
+    - "**/*.go"
+    - "**/*.py"
+
+workflow:
+  description: |
+    双 Agent 协作模式：
+    1. Agent1 (implementer) 执行代码变更 + 同步相关文档
+    2. Agent2 (reviewer)   执行代码审查 + 文档规范检查
+
+  steps:
+    - step: 1
+      agent: implementer
+      prompt_file: docs/agents/implementer-prompt.md
+      actions:
+        - 执行代码变更
+        - 调用 check_api_sync 检查接口同步
+        - 调用 check_db_sync 检查数据库文档同步
+        - 调用 check_custom_doc_sync 检查自定义文档
+        - 如有变更，调用 apply_doc_patch 写入文档存根
+        - 调用 project_change_propose 创建变更单
+        - 调用 audit_log 记录操作
+      on_complete: notify_main_agent
+
+    - step: 2
+      agent: reviewer
+      prompt_file: docs/agents/reviewer-prompt.md
+      actions:
+        - 调用 scan_draft 扫描文档草稿
+        - 调用 changelog_status 检查 pending 状态
+        - 调用 project_doc_health 生成健康报告
+        - 调用 cross_ref_check 检查跨项目引用
+        - 如发现问题，输出修改建议
+        - 调用 audit_log 记录审查结果
+      on_complete: notify_main_agent
+
+mcp_tools_required:
+  - list_projects
+  - check_api_sync
+  - scan_draft
+  - changelog_status
+  - claim_pending
+  - audit_log
+  - check_db_sync
+  - check_custom_doc_sync
+  - doc_cold_start
+  - project_change_propose
+  - project_change_list
+  - project_change_status
+  - project_change_archive
+  - cross_ref_check
+  - team_doc_status
+  - project_doc_health
+  - apply_doc_patch
+  - project_change_release

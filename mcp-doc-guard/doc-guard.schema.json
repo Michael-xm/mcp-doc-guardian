@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DocGuardConfig",
+  "type": "object",
+  "required": ["project", "type", "docs", "mode"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "project": { "type": "string", "minLength": 1 },
+    "type": {
+      "type": "string",
+      "description": "技术栈类型。内置值：java-spring / java-gradle / vue-ts / uniapp / go / python / react-ts；自定义类型需同时声明 custom_detector。"
+    },
+    "custom_detector": {
+      "type": "object",
+      "description": "type 不在内置列表时使用（v5.2 新增）",
+      "properties": {
+        "source_files": {
+          "type": "object",
+          "properties": {
+            "pattern": { "type": "string" },
+            "route_regex": { "type": "string" }
+          },
+          "required": ["pattern"]
+        },
+        "doc_sync_check": {
+          "type": "string",
+          "enum": ["manual", "regex"],
+          "description": "manual：不做自动diff，仅警告需人工核对；regex：使用 source_files.route_regex 做基础 diff"
+        }
+      },
+      "required": ["source_files", "doc_sync_check"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["standalone", "team"]
+    },
+    "team_name": { "type": "string" },
+    "description": { "type": "string" },
+    "team": {
+      "type": "object",
+      "description": "角色权限配置（v5.2 新增，mode=team 时生效）",
+      "properties": {
+        "my_role": {
+          "type": "string",
+          "description": "当前 MCP Server 实例的角色 ID，从此配置读取（非 MCP 协议层传递）"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "allowed_tools"],
+            "properties": {
+              "id": { "type": "string" },
+              "allowed_tools": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "允许调用的工具列表，\"*\" 表示全权限"
+              },
+              "denied_tools": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "明确禁止调用的工具（优先级高于 allowed_tools）"
+              }
+            }
+          }
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "description": "Skill 触发词扩展（v5.2 新增）",
+      "properties": {
+        "extra_triggers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "项目专属触发词，由 setup-skills.sh 合并到团队 skill-template.yaml"
+        },
+        "allow_doc_write": {
+          "description": "v5.3：apply_doc_patch 写入权限档位。stub_only | full | false",
+          "oneOf": [
+            { "type": "string", "enum": ["stub_only", "full"] },
+            { "type": "boolean", "enum": [false] }
+          ]
+        }
+      }
+    },
+    "controller": {
+      "type": "object",
+      "properties": {
+        "pattern": { "type": "string" },
+        "annotation_regex": { "type": "string" }
+      },
+      "required": ["pattern", "annotation_regex"]
+    },
+    "api_call": {
+      "type": "object",
+      "properties": {
+        "pattern": { "type": "string" },
+        "call_regex": { "type": "string" }
+      },
+      "required": ["pattern", "call_regex"]
+    },
+    "docs": {
+      "type": "object",
+      "required": ["changelog"],
+      "properties": {
+        "changelog": {
+          "type": "object",
+          "required": ["path", "pending_path"],
+          "properties": {
+            "path": { "type": "string" },
+            "pending_path": { "type": "string" },
+            "format": { "type": "string", "enum": ["keepachangelog", "timestamp"] },
+            "auto_version": { "type": "boolean" },
+            "triggers": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "api": {
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": { "type": "string" },
+            "triggers": { "type": "array", "items": { "type": "string" } },
+            "path_extract_regex": { "type": "string" },
+            "contract_path": { "type": "string" },
+            "auto_write": {
+              "oneOf": [
+                { "type": "string", "enum": ["stub_only", "full"] },
+                { "type": "boolean", "enum": [false] }
+              ]
+            },
+            "auto_write_template": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        },
+        "database": {
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": { "type": "string" },
+            "triggers": { "type": "array", "items": { "type": "string" } },
+            "entity_pattern": { "type": "string" },
+            "migration_pattern": { "type": "string" }
+          }
+        },
+        "overview": {
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": { "type": "string" },
+            "triggers": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "description": "v5.2：允许任意自定义文档类型（如 pages、specs、adr 等）",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "triggers": { "type": "array", "items": { "type": "string" } },
+          "path_extract_regex": { "type": "string" },
+          "description": { "type": "string" },
+          "auto_write": {
+            "oneOf": [
+              { "type": "string", "enum": ["stub_only", "full"] },
+              { "type": "boolean", "enum": [false] }
+            ]
+          },
+          "auto_write_template": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "trigger_patterns": {
+      "type": "object",
+      "description": "v5.3 新增：trigger 名称 → 文件 glob 映射，供 check_custom_doc_sync 消费",
+      "additionalProperties": { "type": "string" }
+    },
+    "coverage_baseline": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "number", "minimum": 0, "maximum": 1 },
+          { "type": "string", "enum": ["disabled"] }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "if": { "properties": { "type": { "const": "java-spring" } } },
+  "then": { "required": ["controller"] },
+  "else": {
+    "if": {
+      "properties": { "type": { "enum": ["vue-ts", "uniapp"] } }
+    },
+    "then": { "required": ["api_call"] }
+  }
+}
