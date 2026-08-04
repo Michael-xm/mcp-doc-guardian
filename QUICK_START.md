@@ -174,15 +174,15 @@ bash scripts/doc-guard-init.sh
   → 使用: /Users/alice/work
 
 [步骤2] 扫描子项目...
-  发现: lhx-care-server  →  java-spring
-  发现: lhx-care-web     →  vue-ts
-  发现: lhx-care-app     →  uniapp
+  发现: my-server   →  java-spring
+  发现: my-web      →  vue-ts
+  发现: my-app      →  uniapp
 
 [步骤3] 确认识别结果（识别正确直接回车，有误则输入正确值）:
 
-  lhx-care-server [java-spring]:          ← 直接回车，识别正确
-  lhx-care-web [vue-ts]:                  ← 直接回车
-  lhx-care-app [uniapp]:                  ← 直接回车
+  my-server [java-spring]:          ← 直接回车，识别正确
+  my-web [vue-ts]:                  ← 直接回车
+  my-app [uniapp]:                  ← 直接回车
 
 [步骤4] 文档写入权限（全部项目统一设置）:
   false      - AI 只读，不自动写文档
@@ -193,16 +193,16 @@ bash scripts/doc-guard-init.sh
 
 ================================================
   即将为以下项目生成 .doc-guard.yaml：
-    lhx-care-server  (java-spring)
-    lhx-care-web     (vue-ts)
-    lhx-care-app     (uniapp)
+    my-server  (java-spring)
+    my-web     (vue-ts)
+    my-app     (uniapp)
 
   确认生成？[Y/n]:                        ← 回车确认
 
-  生成 lhx-care-server (java-spring)...
-    ✓ /Users/alice/work/lhx-care-server/.doc-guard.yaml
-  生成 lhx-care-web (vue-ts)...
-    ✓ /Users/alice/work/lhx-care-web/.doc-guard.yaml
+  生成 my-server (java-spring)...
+    ✓ /Users/alice/work/my-server/.doc-guard.yaml
+  生成 my-web (vue-ts)...
+    ✓ /Users/alice/work/my-web/.doc-guard.yaml
   ...
 
 ================================================
