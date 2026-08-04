@@ -202,14 +202,16 @@ AI 会自动调用 `check_api_sync`，告诉你哪里没同步，并帮你补上
 
 ## 常用指令速查
 
+> 以下内容直接在 AI 对话框中发送即可，无需在终端执行。
+
 | 你想做什么 | 告诉 AI |
 |-----------|--------|
 | 初始化所有文档存根 | `请执行 doc_cold_start` |
-| 查看整个团队的文档状态 | `team_doc_status()` |
-| 检查某个项目文档健康度 | `project_doc_health({ project: "my-server" })` |
-| 检查 API 文档是否同步 | `check_api_sync({ project: "my-server" })` |
-| 发起一个变更提案 | `project_change_propose({ project: "my-server", title: "新增订单接口" })` |
-| 查看 pending changelog | `changelog_status({ project: "my-server" })` |
+| 查看整个团队的文档状态 | `请查看团队文档状态` |
+| 检查某个项目文档健康度 | `请检查 lhx-care-server 的文档健康度` |
+| 检查 API 文档是否同步 | `请检查 lhx-care-server 的 API 文档是否同步` |
+| 发起一个变更提案 | `请为 lhx-care-server 发起变更提案，标题：新增订单接口` |
+| 查看 pending changelog | `请查看 lhx-care-server 的 pending changelog 状态` |
 
 ---
 
