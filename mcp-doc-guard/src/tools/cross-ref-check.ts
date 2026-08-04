@@ -39,20 +39,16 @@ export async function crossRefCheck(
 
       CROSS_REF_REGEX.lastIndex = 0;
       while ((match = CROSS_REF_REGEX.exec(content)) !== null) {
-        totalRefs++;
         const [reference, targetProject, targetDocType] = match;
         const targetConfig = projectIndex.get(targetProject);
 
+        // targetProject 不是已知内部项目（如 npm scope 包名），直接跳过
         if (!targetConfig) {
-          warnings.push({
-            source_project: config.project,
-            target_project: targetProject,
-            doc_type: docType,
-            reference,
-            target_exists: false,
-          });
           continue;
         }
+
+        // 只统计指向已知内部项目的引用
+        totalRefs++;
 
         const targetDocConfig = targetConfig.docs[targetDocType];
         const targetDocPath = targetDocConfig
