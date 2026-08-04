@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import { minimatch } from 'minimatch';
 import type {
@@ -7,6 +8,31 @@ import type {
   ToolError,
 } from '../types';
 import type { DocGuardConfig } from '../types';
+import { DOCGUARD_ROOT } from '../config-loader';
+
+/**
+ * 加载 auto_write_template 文件内容。
+ * templatePath 支持以下格式：
+ *   - 绝对路径：直接读取
+ *   - 相对路径（以 . 开头）：相对于项目 _root 解析
+ *   - 其他相对路径：相对于 DOCGUARD_ROOT 解析（方便指向 mcp-doc-guardian/docs/agents/）
+ */
+function loadWritePrompt(templatePath: string, projectRoot: string): string | undefined {
+  try {
+    let resolved: string;
+    if (path.isAbsolute(templatePath)) {
+      resolved = templatePath;
+    } else if (templatePath.startsWith('.')) {
+      resolved = path.resolve(projectRoot, templatePath);
+    } else {
+      resolved = path.resolve(DOCGUARD_ROOT, templatePath);
+    }
+    if (!fs.existsSync(resolved)) return undefined;
+    return fs.readFileSync(resolved, 'utf-8');
+  } catch {
+    return undefined;
+  }
+}
 
 function getCurrentBranch(root: string): string {
   try {
@@ -242,6 +268,13 @@ export async function checkApiSync(
   const apiDocPath = config.docs.api?.path;
   const apiDocUpdated = apiDocPath ? changedFiles.includes(apiDocPath) : false;
 
+  // 加载写作提示词模板
+  // 优先级：.doc-guard.yaml 中 docs.api.auto_write_template > 内置默认模板
+  const templatePath =
+    config.docs.api?.auto_write_template ??
+    'mcp-doc-guardian/docs/agents/api-prompt.md';
+  const write_prompt = loadWritePrompt(templatePath, root);
+
   return {
     warning: !apiDocUpdated,
     changed_annotations: changedAnnotations,
@@ -250,5 +283,6 @@ export async function checkApiSync(
     detail: apiDocUpdated
       ? `检测到 ${changedAnnotations.length} 处接口变更，api.md 已更新`
       : `检测到 ${changedAnnotations.length} 处接口变更，api.md 未更新，请及时同步`,
+    ...(write_prompt ? { write_prompt } : {}),
   };
 }

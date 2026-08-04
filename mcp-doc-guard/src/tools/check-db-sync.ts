@@ -8,6 +8,24 @@ import type {
   CheckDbSyncOutput,
   DbSyncItem,
 } from '../types';
+import { DOCGUARD_ROOT } from '../config-loader';
+
+function loadWritePrompt(templatePath: string, projectRoot: string): string | undefined {
+  try {
+    let resolved: string;
+    if (path.isAbsolute(templatePath)) {
+      resolved = templatePath;
+    } else if (templatePath.startsWith('.')) {
+      resolved = path.resolve(projectRoot, templatePath);
+    } else {
+      resolved = path.resolve(DOCGUARD_ROOT, templatePath);
+    }
+    if (!fs.existsSync(resolved)) return undefined;
+    return fs.readFileSync(resolved, 'utf-8');
+  } catch {
+    return undefined;
+  }
+}
 
 function getChangedFiles(root: string, base: string): string[] {
   try {
@@ -113,6 +131,13 @@ export async function checkDbSync(
       uncovered,
       coverage_ratio:
         changedEntities.length > 0 ? covered / changedEntities.length : 1.0,
+      ...((() => {
+        const templatePath =
+          config.docs.database?.auto_write_template ??
+          'mcp-doc-guardian/docs/agents/database-prompt.md';
+        const write_prompt = loadWritePrompt(templatePath, root);
+        return write_prompt ? { write_prompt } : {};
+      })()),
     },
   };
 }

@@ -84,10 +84,12 @@ export interface DocGuardConfig {
       triggers?: string[];
       entity_pattern?: string;
       migration_pattern?: string;
+      auto_write_template?: string;
     };
     overview?: {
       path: string;
       triggers?: string[];
+      auto_write_template?: string;
     };
     [key: string]: {
       path: string;
@@ -126,6 +128,8 @@ export interface ApiSyncResult {
     base: string;
   };
   detail: string;
+  /** 从 docs.api.auto_write_template 加载的写作提示词，AI 应遵照其格式要求更新文档 */
+  write_prompt?: string;
 }
 
 export interface ChangelogStatusResult {
@@ -295,6 +299,8 @@ export interface CheckDbSyncResult {
   covered: number;
   uncovered: DbSyncItem[];
   coverage_ratio: number;
+  /** 从 docs.database.auto_write_template 加载的写作提示词，AI 应遵照其格式要求更新文档 */
+  write_prompt?: string;
 }
 export type CheckDbSyncOutput = { ok: true; result: CheckDbSyncResult } | ToolError;
 

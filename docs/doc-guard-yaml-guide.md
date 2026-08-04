@@ -145,13 +145,34 @@ docs:
     triggers:
       - "src/api/**/*.ts"       # 这些文件变更时，AI 会提示检查 API 文档
     auto_write: stub_only       # 可选：false | stub_only | full
-    # auto_write_template: ...  # 可选：自定义存根模板路径
+    auto_write_template: mcp-doc-guardian/docs/agents/api-prompt.md  # 可选：写作提示词模板路径
 ```
 
 `auto_write` 三档含义：
 - `false`：AI 不自动写，只提示你手动更新
 - `stub_only`：AI 只追加新的存根条目，不覆盖已有内容（**推荐**）
 - `full`：AI 可完整改写文档，适合文档质量要求高且已有 Review 机制的团队
+
+**`auto_write_template` — 写作提示词模板**
+
+当 `check_api_sync` / `check_db_sync` 检测到变更时，会把模板内容附加到返回结果里，AI 看到后会按模板规定的格式写文档，而不是自由发挥。
+
+路径解析规则（三选一）：
+- **绝对路径**：`/absolute/path/to/my-prompt.md`
+- **以 `.` 开头的相对路径**：相对于项目自身目录，例如 `./.doc-guard-prompts/api.md`
+- **其他相对路径**：相对于 `DOCGUARD_ROOT`（工作区根目录），例如 `mcp-doc-guardian/docs/agents/api-prompt.md`
+
+内置模板位置（直接可用，无需配置）：
+
+| 文档类型 | 默认模板路径 |
+|---------|------------|
+| api | `mcp-doc-guardian/docs/agents/api-prompt.md` |
+| database | `mcp-doc-guardian/docs/agents/database-prompt.md` |
+| overview | `mcp-doc-guardian/docs/agents/overview-prompt.md` |
+| pages（自定义类型）| `mcp-doc-guardian/docs/agents/pages-prompt.md` |
+
+如果不配置，工具会自动加载对应的内置模板。  
+如果你对格式有特殊要求，复制内置模板到任意路径修改后，用此字段指向它即可。
 
 ---
 
