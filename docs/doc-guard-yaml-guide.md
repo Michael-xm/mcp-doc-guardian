@@ -1,25 +1,27 @@
-# .doc-guard.yaml 配置说明
+# .doc-guard.yaml 配置完全指南
 
-> 本文件由 `doc-guard-init.sh` 自动生成，生成后你可以按需手动调整。  
-> 完整 JSON Schema 见：[doc-guard.schema.json](../mcp-doc-guard/doc-guard.schema.json)
+> 本文件由 `doc-guard-init.sh` 自动生成，生成后可按需手动调整。
 
 ---
 
 ## 一份真实配置长什么样
 
-以下是 `my-app` 项目的完整配置，后文会逐段解释每个字段的含义：
+以下是一个 Vue + TypeScript 前端项目的完整配置，后文会逐段解释每个字段：
 
 ```yaml
-# .doc-guard.yaml - 由 doc-guard-init.sh 生成
 schema_version: "1.0"
-project: my-app
+project: my-web
 type: vue-ts
 mode: standalone
-description: ""
+description: "前台 H5 + PC 管理后台"
 
 api_call:
   pattern: "src/**/*.{ts,vue,js}"
   call_regex: '(http|request|api)\.(get|post|put|delete|patch)\('
+
+trigger_patterns:
+  api-files: "src/api/**/*.ts"
+  vue-components: "src/components/**/*.vue"
 
 docs:
   changelog:
@@ -29,12 +31,22 @@ docs:
   api:
     path: docs/api.md
     triggers:
-      - "src/api/**/*.ts"
+      - api-files
+    auto_write: stub_only
   overview:
     path: docs/overview.md
     triggers:
-      - "src/**/*.vue"
-      - "src/**/*.tsx"
+      - vue-components
+  pages:
+    path: docs/pages.md
+    triggers:
+      - "src/router/**/*.ts"
+    description: "记录所有页面路由和权限配置"
+
+coverage_baseline:
+  api: 0.8
+  database: 0.9
+  changelog: 1.0
 
 team:
   my_role: agent1-implementer
@@ -42,23 +54,25 @@ team:
 skill:
   allow_doc_write: stub_only
   changelog_format: "- [{status}][{date}] {description}"
+  extra_triggers:
+    - "检查前端接口"
+    - "前端文档同步"
 ```
 
 ---
 
-## 字段说明
+## 顶层字段
 
-### 顶层字段
+| 字段 | 必填 | 类型 | 说明 |
+|------|------|------|------|
+| `schema_version` | 否 | string | 配置文件版本，目前填 `"1.0"` |
+| `project` | **是** | string | 项目名称，全局唯一，与目录名保持一致 |
+| `type` | **是** | string | 技术栈，见下方支持列表 |
+| `mode` | **是** | string | `standalone`（单机）或 `team`（多 Agent 协作）|
+| `team_name` | 否 | string | `mode: team` 时，当前实例所属的团队名 |
+| `description` | 否 | string | 项目描述，供 AI 理解项目用途 |
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `schema_version` | 否 | 配置文件版本，目前固定填 `"1.0"` |
-| `project` | 是 | 项目名称，与目录名保持一致，全局唯一 |
-| `type` | 是 | 技术栈，见下方支持列表 |
-| `mode` | 是 | 运行模式：`standalone`（单机）或 `team`（多 Agent 协作） |
-| `description` | 否 | 项目描述，供 AI 理解项目用途 |
-
-**`type` 支持的内置值：**
+### `type` 支持的内置值
 
 | 值 | 适用场景 |
 |----|---------|
@@ -68,35 +82,50 @@ skill:
 | `react-ts` | React + TypeScript |
 | `uniapp` | uni-app 小程序 / H5 |
 | `go` | Go 语言项目 |
-| `python` | Python 项目（Flask / FastAPI / Django 等）|
+| `python` | Flask / FastAPI / Django 等 |
 
-如果你的项目不在列表中，可以用 `custom_detector`（见后文高级配置）。
+不在列表里的技术栈，使用 `custom_detector` 自定义（见下文）。
 
 ---
 
-### `api_call`（前端 / 非 Java 项目必填）
+## `controller`（Java 项目必填）
 
-用于告诉 AI 在哪些文件里找 HTTP 请求调用，以便检测 API 文档是否同步。
+Java 后端项目需要配置此节点，告诉 Agent 去哪些文件里扫描路由注解。
+
+```yaml
+controller:
+  pattern: "src/main/java/**/*Controller.java"   # 扫描哪些文件（glob）
+  annotation_regex: '@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)'
+  # 匹配路由注解的正则
+```
+
+`type: java-spring` 时此节点**必填**，其他 Java 变体同理。
+
+---
+
+## `api_call`（前端 / 非 Java 项目必填）
+
+告诉 Agent 在哪些文件里找 HTTP 请求调用，以便检测 API 文档是否同步。
 
 ```yaml
 api_call:
   pattern: "src/**/*.{ts,vue,js}"   # 要扫描的文件范围（glob）
   call_regex: '(http|request|api)\.(get|post|put|delete|patch)\('
-  # 匹配 HTTP 调用的正则，根据你项目的请求封装方式调整
+  # 匹配 HTTP 调用的正则，按你的请求封装方式调整
 ```
+
+`type: vue-ts` / `uniapp` 时此节点**必填**。
 
 **常见调整场景：**
 
-如果你的项目用 `axios` 直接调用：
-
+直接使用 `axios`：
 ```yaml
 api_call:
   pattern: "src/**/*.{ts,js}"
   call_regex: 'axios\.(get|post|put|delete|patch)\('
 ```
 
-如果用自封装的 `service.get()`：
-
+自封装的 `service.xxx()`：
 ```yaml
 api_call:
   pattern: "src/**/*.ts"
@@ -105,119 +134,185 @@ api_call:
 
 ---
 
-### `controller`（Java 项目必填）
+## `custom_detector`（自定义技术栈必填）
 
-用于扫描 Spring 控制器里的路由注解。
+当你的项目技术栈不在内置列表时，使用 `custom_detector` 告诉 Agent 如何扫描你的代码。
 
 ```yaml
-controller:
-  pattern: "src/main/java/**/*Controller.java"
-  annotation_regex: '@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping|PatchMapping)'
+type: custom-nest           # 名字随意起，用于日志和展示
+custom_detector:
+  source_files:
+    pattern: "src/**/*.controller.ts"                          # 扫描哪些文件（必填）
+    route_regex: '@(Get|Post|Put|Delete|Patch)\([\'"](.*?)[\'"]\)'  # 提取路由的正则（可选）
+  doc_sync_check: regex     # regex | manual（必填，见下方说明）
+```
+
+**`doc_sync_check` 两种模式：**
+
+| 值 | 行为 |
+|----|------|
+| `regex` | Agent 使用 `route_regex` 对代码和文档做自动 diff，精确报告哪条路由缺少文档 |
+| `manual` | Agent 不做自动 diff，只提示"此类文件变更了，请人工核对文档" |
+
+建议：能写出准确 `route_regex` 的用 `regex`，无法用正则提取路由的用 `manual`。
+
+**示例 — PHP Laravel：**
+
+```yaml
+type: custom-laravel
+custom_detector:
+  source_files:
+    pattern: "app/Http/Controllers/**/*.php"
+    route_regex: 'Route::(get|post|put|delete|patch)\([\'"](.*?)[\'"]\)'
+  doc_sync_check: regex
+```
+
+**示例 — Ruby on Rails：**
+
+```yaml
+type: custom-rails
+custom_detector:
+  source_files:
+    pattern: "app/controllers/**/*_controller.rb"
+  doc_sync_check: manual    # Rails 路由在 routes.rb 里，不适合用正则提取，人工核对即可
+```
+
+**示例 — FastAPI（Python）：**
+
+```yaml
+type: custom-fastapi
+custom_detector:
+  source_files:
+    pattern: "app/routers/**/*.py"
+    route_regex: '@(router|app)\.(get|post|put|delete|patch)\([\'"](.*?)[\'"]\)'
+  doc_sync_check: regex
 ```
 
 ---
 
-### `docs`（必填）
+## `docs`（必填）
 
-配置各类文档的路径和触发条件。`changelog` 是唯一必须声明的子项，其余按需配置。
+配置各类文档的路径和触发条件。`changelog` 是唯一必须声明的子节点，其余按需配置。
 
 ---
 
-#### `docs.changelog`（必填）
+### `docs.changelog`（必填）
 
 ```yaml
 docs:
   changelog:
-    path: docs/changelogs/CHANGELOG.md        # 主 changelog 文件路径
-    pending_path: docs/changelogs/pending      # 待处理 changelog 存放目录
-    format: keepachangelog                     # 格式：keepachangelog 或 timestamp
-    auto_version: false                        # 是否自动推导版本号（可选）
+    path: docs/changelogs/CHANGELOG.md       # 主 changelog 文件路径（必填）
+    pending_path: docs/changelogs/pending    # 待处理 changelog 存放目录（必填）
+    format: keepachangelog                   # keepachangelog | timestamp（可选）
+    auto_version: false                      # 是否自动推导版本号（可选，默认 false）
+```
+
+**`format` 两种格式：**
+
+`keepachangelog`（推荐）— 符合 [Keep a Changelog](https://keepachangelog.com) 规范：
+```markdown
+## [Unreleased]
+### Added
+- POST /api/v1/orders 新增订单接口
+```
+
+`timestamp` — 每条记录带时间戳：
+```markdown
+- [2026-08-03] 新增 POST /api/v1/orders
 ```
 
 ---
 
-#### `docs.api`（推荐配置）
+### `docs.api`（推荐配置）
 
 ```yaml
 docs:
   api:
-    path: docs/api.md           # API 文档路径
-    triggers:
-      - "src/api/**/*.ts"       # 这些文件变更时，AI 会提示检查 API 文档
-    auto_write: stub_only       # 可选：false | stub_only | full
-    auto_write_template: mcp-doc-guardian/docs/agents/api-prompt.md  # 可选：写作提示词模板路径
+    path: docs/api.md                  # API 文档路径（必填）
+    triggers:                          # 这些文件变更时，AI 提示检查 API 文档
+      - "src/api/**/*.ts"
+    auto_write: stub_only              # false | stub_only | full（可选）
+    auto_write_template: docs/agents/api-prompt.md  # 自定义写作提示词模板路径（可选）
+    path_extract_regex: ""             # 从代码中提取接口路径的正则（可选，高级用法）
+    contract_path: ""                  # API 合约文件路径，如 openapi.yaml（可选）
+    note: ""                           # 给 AI 的额外备注（可选）
 ```
 
-`auto_write` 三档含义：
-- `false`：AI 不自动写，只提示你手动更新
-- `stub_only`：AI 只追加新的存根条目，不覆盖已有内容（**推荐**）
-- `full`：AI 可完整改写文档，适合文档质量要求高且已有 Review 机制的团队
+**`auto_write` 三档含义：**
 
-**`auto_write_template` — 写作提示词模板**
+| 值 | 行为 |
+|----|------|
+| `false` | AI 只检测漂移，不自动写文档，仅告诉你需要手动更新 |
+| `stub_only` | AI 只追加新的存根条目，不修改已有内容（**推荐，适合大多数团队**）|
+| `full` | AI 可完整改写文档，适合已有 Review 机制的团队 |
 
-当 `check_api_sync` / `check_db_sync` 检测到变更时，会把模板内容附加到返回结果里，AI 看到后会按模板规定的格式写文档，而不是自由发挥。
+**`auto_write_template` — 自定义写作模板**
 
-路径解析规则（三选一）：
-- **绝对路径**：`/absolute/path/to/my-prompt.md`
-- **以 `.` 开头的相对路径**：相对于项目自身目录，例如 `./.doc-guard-prompts/api.md`
-- **其他相对路径**：相对于 `DOCGUARD_ROOT`（工作区根目录），例如 `mcp-doc-guardian/docs/agents/api-prompt.md`
+控制 AI 以什么格式生成文档内容。不配置时使用内置模板。
 
 内置模板位置（直接可用，无需配置）：
 
-| 文档类型 | 默认模板路径 |
+| 文档类型 | 内置模板路径 |
 |---------|------------|
-| api | `mcp-doc-guardian/docs/agents/api-prompt.md` |
-| database | `mcp-doc-guardian/docs/agents/database-prompt.md` |
-| overview | `mcp-doc-guardian/docs/agents/overview-prompt.md` |
-| pages（自定义类型）| `mcp-doc-guardian/docs/agents/pages-prompt.md` |
+| `api` | `mcp-doc-guardian/docs/agents/api-prompt.md` |
+| `database` | `mcp-doc-guardian/docs/agents/database-prompt.md` |
+| `overview` | `mcp-doc-guardian/docs/agents/overview-prompt.md` |
+| 自定义类型 | `mcp-doc-guardian/docs/agents/pages-prompt.md` |
 
-如果不配置，工具会自动加载对应的内置模板。  
-如果你对格式有特殊要求，复制内置模板到任意路径修改后，用此字段指向它即可。
+如需自定义格式，复制内置模板到任意路径修改，然后用此字段指向它：
+
+```yaml
+auto_write_template: ./.doc-guard-prompts/api.md   # 相对于项目自身目录
+# 或
+auto_write_template: mcp-doc-guardian/docs/agents/api-prompt.md  # 相对于 DOCGUARD_ROOT
+# 或
+auto_write_template: /absolute/path/to/my-prompt.md              # 绝对路径
+```
 
 ---
 
-#### `docs.database`（Java 项目推荐）
+### `docs.database`（Java 项目推荐）
 
 ```yaml
 docs:
   database:
-    path: docs/database.md
+    path: docs/database.md               # 数据库文档路径（必填）
     triggers:
       - "**/*Entity.java"
       - "**/*Mapper.java"
       - "**/*Mapper.xml"
-    entity_pattern: "src/main/java/**/*Entity.java"     # 可选，更精确的扫描范围
-    migration_pattern: "src/main/resources/db/**/*.sql" # 可选，迁移脚本路径
+    entity_pattern: "src/main/java/**/*Entity.java"      # 更精确的实体扫描范围（可选）
+    migration_pattern: "src/main/resources/db/**/*.sql"  # SQL 迁移脚本路径（可选）
 ```
 
 ---
 
-#### `docs.overview`（可选）
+### `docs.overview`（可选）
 
 ```yaml
 docs:
   overview:
     path: docs/overview.md
     triggers:
-      - "src/**/*.vue"   # 这些文件变更时，AI 会提示检查概览文档
+      - "src/**/*.vue"
+      - "src/**/*.tsx"
 ```
 
 ---
 
-#### 自定义文档类型（可选）
+### 自定义文档类型（可选）
 
-除内置的 `api` / `database` / `overview` 外，你可以添加任意自定义文档节点：
+除内置的 `api` / `database` / `overview` 外，可以添加任意自定义文档节点，节点名即文档类型名：
 
 ```yaml
 docs:
-  # 内置节点...
-
   # 自定义：页面路由文档
   pages:
     path: docs/pages.md
     triggers:
       - "src/router/**/*.ts"
-    description: "记录所有页面路由和权限配置"
+    description: "记录所有页面路由和权限配置"   # 给 AI 的说明
+    auto_write: stub_only
 
   # 自定义：环境变量说明
   env:
@@ -225,62 +320,24 @@ docs:
     triggers:
       - ".env*"
       - "vite.config.ts"
+    description: "记录所有环境变量及其默认值"
+
+  # 自定义：部署说明
+  deploy:
+    path: docs/deploy.md
+    triggers:
+      - "Dockerfile"
+      - "docker-compose*.yml"
+      - ".github/workflows/**/*.yml"
 ```
+
+自定义节点支持的字段与 `docs.api` 相同：`path`、`triggers`、`description`、`auto_write`、`auto_write_template`、`path_extract_regex`。
 
 ---
 
-### `team`（可选）
+## `trigger_patterns`（可选）
 
-单人使用时保持默认即可。多 Agent 协作时配置角色权限。
-
-```yaml
-team:
-  my_role: agent1-implementer   # 当前实例的角色
-
-  # 多 Agent 协作时取消注释并填写：
-  # roles:
-  #   - id: agent1-implementer
-  #     allowed_tools: ["*"]           # 所有工具权限
-  #   - id: agent2-reviewer
-  #     allowed_tools: ["scan_draft", "project_doc_health", "team_doc_status"]
-  #     denied_tools: ["apply_doc_patch"]  # 明确禁止写文档
-```
-
----
-
-### `skill`（可选）
-
-```yaml
-skill:
-  allow_doc_write: stub_only    # 全局写入权限，与 docs.*.auto_write 含义相同
-  changelog_format: "- [{status}][{date}] {description}"  # changelog 条目格式
-  extra_triggers:               # 可选：额外的自然语言触发词
-    - "检查前端接口"
-    - "前端文档同步"
-```
-
----
-
-## 高级配置
-
-### 自定义技术栈（`custom_detector`）
-
-当你的项目不是内置支持的技术栈时：
-
-```yaml
-type: custom-nest              # 自定义名称，随意起
-custom_detector:
-  source_files:
-    pattern: "src/**/*.controller.ts"    # 扫描哪些文件
-    route_regex: '@(Get|Post|Put|Delete|Patch)\([\'"](.*?)[\'"]\)'  # 提取路由的正则
-  doc_sync_check: regex        # regex：用正则做 diff；manual：仅提示人工核对
-```
-
----
-
-### 触发模式别名（`trigger_patterns`）
-
-当多个文档节点使用相同的 glob 时，可以定义别名复用：
+当多个文档节点使用相同的 glob 时，可以定义别名复用，避免重复书写：
 
 ```yaml
 trigger_patterns:
@@ -291,18 +348,18 @@ docs:
   api:
     path: docs/api.md
     triggers:
-      - api-files          # 引用别名
+      - api-files            # 引用别名，等价于 "src/api/**/*.ts"
   overview:
     path: docs/overview.md
     triggers:
-      - vue-components     # 引用别名
+      - vue-components       # 引用别名
 ```
 
 ---
 
-### 覆盖率基线（`coverage_baseline`）
+## `coverage_baseline`（可选）
 
-用于 `project_doc_health` 工具的健康度评分：
+用于 `project_doc_health` 工具的健康度评分。各文档类型的覆盖率目标（0~1 之间，或 `"disabled"` 禁用该项评分）：
 
 ```yaml
 coverage_baseline:
@@ -310,7 +367,61 @@ coverage_baseline:
   database: 0.9     # 数据库文档覆盖率目标 90%
   overview: 0.5     # 概览文档覆盖率目标 50%
   changelog: 1.0    # changelog 覆盖率目标 100%
+  pages: "disabled" # 该项不计入健康度评分
 ```
+
+---
+
+## `team`（可选）
+
+单人使用时不需要配置。多 Agent 协作时，用 `team` 节点控制各角色的工具权限。
+
+```yaml
+team:
+  my_role: agent1-implementer   # 当前 MCP Server 实例的角色 ID
+
+  roles:
+    - id: agent1-implementer
+      allowed_tools: ["*"]      # 所有工具权限
+
+    - id: agent2-reviewer
+      allowed_tools:
+        - scan_draft
+        - project_doc_health
+        - team_doc_status
+        - changelog_status
+      denied_tools:
+        - apply_doc_patch       # 明确禁止写文档（优先级高于 allowed_tools）
+
+    - id: agent3-readonly
+      allowed_tools:
+        - list_projects
+        - team_doc_status
+        - project_doc_health
+```
+
+**`denied_tools` 优先级高于 `allowed_tools`**：即使 `allowed_tools` 里有 `"*"`，`denied_tools` 里列出的工具仍会被拒绝。
+
+---
+
+## `skill`（可选）
+
+```yaml
+skill:
+  allow_doc_write: stub_only    # 全局写入权限兜底值（见下方说明）
+  changelog_format: "- [{status}][{date}] {description}"  # changelog 条目格式模板
+  extra_triggers:               # 项目专属触发词，AI 识别到这些词时自动执行文档检查
+    - "检查前端接口"
+    - "前端文档同步"
+    - "check frontend api"
+```
+
+**`allow_doc_write` 和 `docs.*.auto_write` 的区别：**
+
+- `docs.api.auto_write`：针对**单个文档节点**的写入控制
+- `skill.allow_doc_write`：**全局兜底值**，当某文档节点没有声明 `auto_write` 时使用此值
+
+优先级：`docs.节点.auto_write` > `skill.allow_doc_write`
 
 ---
 
@@ -318,18 +429,22 @@ coverage_baseline:
 
 **Q：`triggers` 里的路径是相对于哪里的？**
 
-相对于 `DOCGUARD_ROOT`（即工作区根目录），不是项目目录。  
-例如 `my-app` 项目的 `"src/api/**/*.ts"` 实际匹配的是 `DOCGUARD_ROOT/my-app/src/api/**/*.ts`。
+相对于 `DOCGUARD_ROOT`（工作区根目录），不是项目自身目录。  
+例如 `my-app` 项目配置 `"src/api/**/*.ts"`，实际匹配的是 `DOCGUARD_ROOT/my-app/src/api/**/*.ts`。
 
-**Q：`auto_write` 和 `skill.allow_doc_write` 有什么区别？**
+**Q：`type` 写了 `custom-xxx`，但没写 `custom_detector`，会怎样？**
 
-- `docs.api.auto_write`：针对单个文档节点的写入控制
-- `skill.allow_doc_write`：全局兜底值，当某个文档节点没有声明 `auto_write` 时使用此值
+Agent 会报错提示配置缺失。只要 `type` 不在内置列表里，就必须同时声明 `custom_detector`。
 
 **Q：可以完全不配置 `docs.api`，只用 changelog 吗？**
 
-可以，`docs` 下只有 `changelog` 是必填的，其余节点按需声明。
+可以。`docs` 下只有 `changelog` 是必填的，其余节点按需声明。
 
----
+**Q：`auto_write: full` 安全吗？会不会覆盖已有内容？**
 
-> 完整字段参考：[doc-guard.schema.json](../mcp-doc-guard/doc-guard.schema.json)
+`stub_only` 模式只追加不覆盖，是最安全的选项。  
+`full` 模式下 AI 可以修改已有内容，建议配合 Git 版本控制和 Review 流程使用。
+
+**Q：`custom_detector` 里不写 `route_regex` 可以吗？**
+
+可以，但此时 `doc_sync_check` 必须设为 `manual`，否则 Agent 不知道如何 diff 代码和文档。
