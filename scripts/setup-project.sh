@@ -2,7 +2,7 @@
 # ================================================================
 # setup-project.sh — 在指定目录生成 .doc-guard.yaml 配置模板
 # 用法: ./setup-project.sh <project-name> <type> [project-dir]
-# 示例: ./setup-project.sh lhx-care-server java-spring ../lhx-care-server
+# 示例: ./setup-project.sh my-server java-spring ../my-server
 # ================================================================
 set -euo pipefail
 

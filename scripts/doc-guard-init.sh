@@ -16,7 +16,7 @@ echo ""
 echo "  mcp-doc-guardian 目录: ${DOC_GUARD_DIR}"
 echo "  默认扫描工作区:        ${DEFAULT_ROOT}"
 echo ""
-echo "  提示：工作区是放有各子项目（如 lhx-care-server、lhx-care-web）"
+echo "  提示：工作区是放有各子项目（如 my-server、my-web）"
 echo "        的那一层目录，通常是 mcp-doc-guardian 的父目录。"
 echo ""
 

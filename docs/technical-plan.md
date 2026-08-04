@@ -144,21 +144,21 @@ Agent 改完代码
 **文件位置：**
 
 ```
-lhx-care-server/.doc-guard.yaml
-lhx-care-web/.doc-guard.yaml
-lhx-care-app/.doc-guard.yaml
+my-server/.doc-guard.yaml
+my-web/.doc-guard.yaml
+my-app/.doc-guard.yaml
 ```
 
 ### 3.2 配置示例
 
-**lhx-care-server/.doc-guard.yaml（Java Spring 后端）：**
+**my-server/.doc-guard.yaml（Java Spring 后端）：**
 
 ```yaml
 schema_version: "1.0"              # v5.1 新增（旧配置缺失时输出 WARN）
-project: lhx-care-server
+project: my-server
 type: java-spring                  # 决定 check_api_sync 使用哪种注解检测策略
 mode: team                         # standalone | team（v5.1 JSON Schema 必填）
-team_name: lhx-care
+team_name: my-team
 description: 长护险智慧监管平台后端服务
 
 # v5.2 新增：角色权限配置（mode=team 时生效）
@@ -234,14 +234,14 @@ coverage_baseline:
 #   cross_ref_health: 0.1
 ```
 
-**lhx-care-web/.doc-guard.yaml（Vue.js 前端）：**
+**my-web/.doc-guard.yaml（Vue.js 前端）：**
 
 ```yaml
 schema_version: "1.0"
-project: lhx-care-web
+project: my-web
 type: vue-ts
 mode: team
-team_name: lhx-care
+team_name: my-team
 description: 长护险智慧监管平台前端
 
 # 前端 API 调用检测（优化后的正则，避免误报）
@@ -270,14 +270,14 @@ coverage_baseline:
   overview: disabled   # 初期禁用，待格式规范稳定后启用
 ```
 
-**lhx-care-app/.doc-guard.yaml（UniApp 小程序）：**
+**my-app/.doc-guard.yaml（UniApp 小程序）：**
 
 ```yaml
 schema_version: "1.0"
-project: lhx-care-app
+project: my-app
 type: uniapp
 mode: team
-team_name: lhx-care
+team_name: my-team
 description: 长护险智慧监管平台移动端
 
 api_call:
@@ -1144,7 +1144,7 @@ export interface TeamDocStatusResult {
 - 未处理 [Draft]：7 处（平均滞留 3.2 天）
 - 跨项目 API 不一致：2 处
 
-⚠️  lhx-care-server：文档骨架自动写入未启用（allow_doc_write: false）
+⚠️  my-server：文档骨架自动写入未启用（allow_doc_write: false）
     启用方式：在 .doc-guard.yaml 的 skill 节点设置 allow_doc_write: stub_only
     效果：API/DB 变更时自动追加文档框架条目，减少遗漏
     建议：运行 2 周后熟悉方案再升级（false → stub_only → full）
@@ -1370,7 +1370,7 @@ export interface ProjectDocHealthResult {
 
 **输出示例：**
 ```
-lhx-care-server 项目健康报告（最近 30 天）：
+my-server 项目健康报告（最近 30 天）：
 
 API 覆盖率：75% (30/40)
   Controller 注解：30 个 | api.md 条目：40 个
@@ -1851,13 +1851,13 @@ type DocColdStartOutput =
 
 ```typescript
 // 场景1：在 main 分支直接操作
-check_api_sync({ project: "lhx-care-server", base: "origin/main" })
+check_api_sync({ project: "my-server", base: "origin/main" })
 
 // 场景2：rebase 后避免误报
-check_api_sync({ project: "lhx-care-server", base: "main" })
+check_api_sync({ project: "my-server", base: "main" })
 
 // 默认：feature branch 开发
-check_api_sync({ project: "lhx-care-server" })  // base = "HEAD"
+check_api_sync({ project: "my-server" })  // base = "HEAD"
 ```
 
 ### 5.6 cross_ref_check 路径归一化
@@ -1964,11 +1964,11 @@ created: 2026-07-31
 status: draft                     # v5.1 新增：draft | ready_for_review | reviewing
 reviewing_since: null             # v5.1 新增：Agent2 开始时写入 ISO8601 时间戳；> 24h 自动重置
 reviewing_by: null                # v5.1 新增：Agent2 session id
-project: lhx-care-server          # 所属项目（多项目 monorepo 必填）
+project: my-server          # 所属项目（多项目 monorepo 必填）
 change_type: feature               # feature | bugfix | refactor | docs | chore
 affects_projects:                  # 本次变更影响的其他项目（跨项目联动时填写）
-  - lhx-care-web
-  - lhx-care-app
+  - my-web
+  - my-app
 ---
 
 - [Draft][2026-07-31] 新增健康记录查询接口（GET /api/health/records）
@@ -1997,7 +1997,7 @@ affects_projects:                  # 本次变更影响的其他项目（跨项�
 mkdir -p */docs/changelogs/pending
 
 # 2. 迁移存量内容
-for project in lhx-care-*; do
+for project in my-team-*; do
   if [ -f "$project/docs/changelog-pending.md" ]; then
     cat > "$project/docs/changelogs/pending/migration-baseline.md" <<EOF
 ---
@@ -2169,7 +2169,7 @@ if (commandExists('kiro-cli')) {
 
 ```markdown
 ---
-project: lhx-care-server
+project: my-server
 change_type: feature
 title: 新增 JWT 用户认证机制
 created: 2026-07-31T18:30:00+08:00
@@ -2755,8 +2755,8 @@ bash scripts/doc-guard-init.sh
 ```bash
 bash scripts/doc-guard-init.sh \
   --non-interactive \
-  --team-name lhx-care \
-  --projects "lhx-care-server:java-spring,lhx-care-web:vue-ts,lhx-care-app:uniapp"
+  --team-name my-team \
+  --projects "my-server:java-spring,my-web:vue-ts,my-app:uniapp"
 ```
 
 > 跳过所有交互询问（包括 O3 识别确认和 v5.6 stub_only 询问），直接按参数写入 `.doc-guard.yaml`。与 devcontainer `postCreateCommand` 和 GitHub Actions 初始化流水线配套使用。
