@@ -44,8 +44,8 @@ cd mcp-doc-guardian
 ```
 ~/work/                        ← 这就是"工作区根目录"（后面会用到）
 ├── mcp-doc-guardian/          ← 刚克隆的
-├── lhx-care-server/           ← 你的业务项目 A
-├── lhx-care-web/              ← 你的业务项目 B
+├── my-server/                 ← 你的业务项目 A
+├── my-web/                    ← 你的业务项目 B
 └── ...
 ```
 
@@ -242,12 +242,12 @@ AI 会调用 `check_api_sync`，告诉你哪里没同步并帮你补上。
 | 你想做什么 | 发给 AI 的内容 |
 |-----------|--------------|
 | 初始化所有文档存根 | `请执行 doc_cold_start` |
-| 检查某项目 API 文档是否同步 | `请检查 lhx-care-server 的 API 文档是否同步` |
-| 检查数据库文档是否同步 | `请检查 lhx-care-server 的数据库文档是否同步` |
+| 检查某项目 API 文档是否同步 | `请检查 my-server 的 API 文档是否同步` |
+| 检查数据库文档是否同步 | `请检查 my-server 的数据库文档是否同步` |
 | 查看整个团队的文档健康状态 | `请查看团队文档状态` |
-| 查看单个项目文档健康度 | `请检查 lhx-care-server 的文档健康度` |
-| 发起一个变更提案 | `请为 lhx-care-server 发起变更提案，标题：新增订单接口` |
-| 查看 pending changelog | `请查看 lhx-care-server 的 pending changelog 状态` |
+| 查看单个项目文档健康度 | `请检查 my-server 的文档健康度` |
+| 发起一个变更提案 | `请为 my-server 发起变更提案，标题：新增订单接口` |
+| 查看 pending changelog | `请查看 my-server 的 pending changelog 状态` |
 
 ---
 
