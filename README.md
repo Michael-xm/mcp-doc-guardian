@@ -36,21 +36,28 @@ AI:   [calls check_api_sync]
 
 ## Quick Start
 
-**Step 1 — Build**
+**Step 1 — Build & configure (one command)**
+
+Run from inside the `mcp-doc-guardian` directory:
 
 ```bash
-cd mcp-doc-guardian/mcp-doc-guard
-npm install && npm run build
+./scripts/setup-all.sh
 ```
+
+This builds the MCP server, installs git hooks, and writes the MCP config files automatically.
 
 **Step 2 — Connect to your IDE**
 
-Add to your MCP config (CodeBuddy / Cursor / Claude Desktop):
+After Step 1, copy the generated config into your IDE:
+
+- **CodeBuddy**: open `.codebuddy/mcp.json`, copy its contents into CodeBuddy → MCP → `+ 配置 MCP`
+- **Cursor**: the config is already written to `<workspace>/.cursor/mcp.json` — just restart Cursor
+- **Claude Desktop / other**: use the JSON below, replacing the two paths
 
 ```json
 {
   "mcpServers": {
-    "doc-guardian": {
+    "doc-guard": {
       "command": "node",
       "args": ["/absolute/path/to/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
@@ -61,14 +68,17 @@ Add to your MCP config (CodeBuddy / Cursor / Claude Desktop):
 }
 ```
 
-**Step 3 — Init your project**
+> `DOCGUARD_ROOT` = the directory that **contains** `mcp-doc-guardian` (i.e. its parent).  
+> e.g. if you cloned to `/Users/you/work/qh/mcp-doc-guardian`, use `/Users/you/work/qh`.
+
+**Step 3 — Init your projects**
 
 ```bash
-# Generate config for your project (pick your stack)
-./scripts/setup-project.sh my-server java-spring ../my-server
+# Interactive wizard (recommended — auto-detects your stack)
+bash scripts/doc-guard-init.sh
 
-# Or one-click init everything
-./scripts/setup-all.sh
+# Or manually for one project
+./scripts/setup-project.sh my-server java-spring ../my-server
 ```
 
 **Step 4 — Start using it**
@@ -76,7 +86,7 @@ Add to your MCP config (CodeBuddy / Cursor / Claude Desktop):
 Tell your AI agent:
 
 ```
-Please run doc_cold_start to initialize documentation for this project.
+请执行 doc_cold_start
 ```
 
 That's it. The guardian is watching.

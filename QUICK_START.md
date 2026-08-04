@@ -1,194 +1,229 @@
-# 5 分钟上手 mcp-doc-guardian
+# mcp-doc-guardian 快速上手
 
-> 跟着下面 4 步走，你的 AI Agent 就能开始自动守护文档了。
+> **目标**：让你的 AI Agent（CodeBuddy / Cursor / Claude Code 等）能感知代码变更，并自动检查文档有没有同步更新。
 
 ---
 
-## 准备工作
+## 前置条件
 
-确认你已安装：
-
-- Node.js >= 18（`node -v` 检查）
+- Node.js >= 18（在终端运行 `node -v` 确认版本）
 - Git
-- 任意一款支持 MCP 的 AI 工具：CodeBuddy / Cursor / Claude Code CLI / VS Code+Cline
+- 已安装支持 MCP 的 AI 工具：CodeBuddy / Cursor / Claude Code CLI / VS Code+Cline 任一即可
 
 ---
 
-## 第一步：获取代码
+## 整体流程
+
+```
+第一步  git clone 拉代码
+   ↓
+第二步  ./scripts/setup-all.sh  （一键构建 + 生成配置文件）
+   ↓
+第三步  把配置文件粘贴到 IDE，接入 MCP
+   ↓
+第四步  bash scripts/doc-guard-init.sh  （为你的项目生成 .doc-guard.yaml）
+   ↓
+第五步  在 AI 对话框发送 "请执行 doc_cold_start"，完成！
+```
+
+---
+
+## 第一步：拉取代码
+
+将 `mcp-doc-guardian` 克隆到你的工作区目录下（和你的业务项目平级）：
 
 ```bash
+# 假设你的工作区是 ~/work/qh，业务项目也在这里
+cd ~/work/qh
 git clone https://github.com/Michael-xm/mcp-doc-guardian
 cd mcp-doc-guardian
 ```
 
+克隆后你的目录结构应该是这样：
+
+```
+~/work/qh/                     ← 这就是"工作区根目录"（后面会用到）
+├── mcp-doc-guardian/          ← 刚克隆的
+├── lhx-care-server/           ← 你的业务项目 A
+├── lhx-care-web/              ← 你的业务项目 B
+└── ...
+```
+
 ---
 
-## 第二步：构建并接入你的 IDE
+## 第二步：一键构建并生成配置
 
-### 2.1 构建 MCP Server
+在 `mcp-doc-guardian` 目录下运行：
 
 ```bash
-# 在 mcp-doc-guardian 目录下运行，自动完成 build + skills + git hooks + MCP 配置
 ./scripts/setup-all.sh
 ```
 
-看到如下输出说明成功：
+这个脚本会自动完成：
+1. 构建 MCP Server（`npm install` + `npm run build`）
+2. 安装 AI Agent Skills
+3. 安装 git hooks
+4. 生成 IDE 配置文件（`.codebuddy/mcp.json` 和 `.cursor/mcp.json`）
 
-```
->>> [1/5] 构建 MCP Server...
-    MCP Server 构建完成
->>> [2/5] 设置 Agent Skills...
-    Skills 安装完成
->>> [3/5] 安装 git hooks...
-    git hooks 安装完成
->>> [4/5] 生成 MCP 配置...
-    MCP 配置已生成：.codebuddy/mcp.json
->>> [5/5] 完成！
-```
+看到 `初始化完成！` 即成功。整个过程约 1~2 分钟。
 
 ---
 
-### 2.2 接入 IDE
+## 第三步：把 MCP 配置接入你的 IDE
 
-根据你使用的工具，选择对应方式：
+根据你使用的工具选择对应方式：
 
 ---
 
-#### CodeBuddy（推荐）
+### CodeBuddy（推荐）
 
-`setup-all.sh` 已自动生成 `.codebuddy/mcp.json`，只需在 CodeBuddy 中加载：
+`setup-all.sh` 已自动生成 `.codebuddy/mcp.json`，路径已填好，直接复制粘贴即可：
 
-1. 打开 CodeBuddy → 点击顶部菜单「MCP」
-2. 点击右上角 `+ 配置 MCP`
-3. 将以下内容粘贴进去（路径已自动填好）：
+1. 打开 `.codebuddy/mcp.json`，复制全部内容
+2. 点击 CodeBuddy 顶部菜单「MCP」→ 右上角「`+ 配置 MCP`」
+3. 粘贴内容，点击保存
+4. 左侧「我的 MCP」列表出现 `doc-guard` 即为成功
+
+---
+
+### Cursor
+
+配置已自动写入工作区根目录的 `.cursor/mcp.json`，重启 Cursor 即生效。
+
+如需手动确认路径正确：
+
+```bash
+cat $(dirname $(pwd))/.cursor/mcp.json
+```
+
+重启 Cursor 后，在「Settings → MCP」中确认 `doc-guard` 出现即可。
+
+---
+
+### Claude Code CLI
+
+```bash
+# 将配置复制到 Claude 的全局 MCP 配置
+cp .codebuddy/mcp.json ~/.claude/mcp.json
+```
+
+之后正常启动 `claude` 即自动加载。
+
+---
+
+### VS Code + Cline
+
+1. 侧边栏点击 Cline 图标 → 右上角齿轮 → 「MCP Servers」→「Edit MCP Settings」
+2. 在打开的 `cline_mcp_settings.json` 里，将 `.codebuddy/mcp.json` 的内容合并进去
+3. 保存后 Cline 自动重载
+
+---
+
+### 配置内容说明
+
+所有 IDE 使用同一份配置结构：
 
 ```json
 {
   "mcpServers": {
     "doc-guard": {
       "command": "node",
-      "args": ["/你的工作区绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
+      "args": ["/你的工作区/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
-        "DOCGUARD_ROOT": "/你的工作区绝对路径"
+        "DOCGUARD_ROOT": "/你的工作区"
       }
     }
   }
 }
 ```
 
-> 直接复制 `.codebuddy/mcp.json` 的内容粘贴即可，路径已由 `setup-all.sh` 替换好。
+两个路径的含义：
+- `args` 里的路径：指向 MCP Server 的入口文件（`dist/index.js`）
+- `DOCGUARD_ROOT`：**工作区根目录**，即 `mcp-doc-guardian` 的父目录
 
-4. 点击保存，「我的 MCP」列表中出现 `doc-guard` 即为成功。
+> 举例：如果你克隆到 `/Users/alice/work/qh/mcp-doc-guardian`，  
+> 则 `DOCGUARD_ROOT` = `/Users/alice/work/qh`
 
----
-
-#### Cursor
-
-1. 复制模板文件：
-
-```bash
-cp .codebuddy/mcp.template.json .cursor/mcp.json
-```
-
-2. 打开 `.cursor/mcp.json`，将 `{{REPO_ROOT}}` 替换为你的工作区绝对路径：
-
-```bash
-# macOS / Linux 一键替换
-sed -i '' "s|{{REPO_ROOT}}|$(dirname $(pwd))|g" .cursor/mcp.json
-```
-
-3. 重启 Cursor，在「Settings → MCP」中确认 `doc-guard` 已出现。
+`setup-all.sh` 已自动把这两个路径替换好，直接用生成的文件即可，无需手动改。
 
 ---
 
-#### Claude Code CLI
+## 第四步：为你的项目生成配置
 
-1. 先生成配置文件：
+运行交互式向导：
 
 ```bash
-REPO_ROOT="$(dirname $(pwd))"
-sed "s|{{REPO_ROOT}}|$REPO_ROOT|g" .codebuddy/mcp.template.json > /tmp/doc-guard-mcp.json
+bash scripts/doc-guard-init.sh
 ```
 
-2. 启动时加载：
+向导会做三件事：
+1. **自动扫描**工作区下的所有子项目，识别技术栈（Java/Vue/Go/Python 等）
+2. **让你确认**识别结果，有误的直接输入正确值（无误直接回车跳过）
+3. **一次性选择**文档写入权限，生成所有项目的 `.doc-guard.yaml`
 
-```bash
-claude --mcp-config /tmp/doc-guard-mcp.json
+示例交互（全程大约 30 秒）：
+
 ```
+================================================
+  doc-guard 初始化向导
+================================================
 
-或写入 `~/.claude/mcp.json` 永久生效：
+  默认扫描工作区: /Users/alice/work/qh
 
-```bash
-cp /tmp/doc-guard-mcp.json ~/.claude/mcp.json
+[步骤1] 工作区根目录 [/Users/alice/work/qh]（直接回车接受）:
+  → 使用: /Users/alice/work/qh
+
+[步骤2] 扫描子项目...
+  发现: lhx-care-server  →  java-spring
+  发现: lhx-care-web     →  vue-ts
+  发现: lhx-care-app     →  uniapp
+
+[步骤3] 确认识别结果（识别正确直接回车，有误则输入正确值）:
+
+  lhx-care-server [java-spring]:          ← 直接回车，识别正确
+  lhx-care-web [vue-ts]:                  ← 直接回车
+  lhx-care-app [uniapp]:                  ← 直接回车
+
+[步骤4] 文档写入权限（全部项目统一设置）:
+  false      - AI 只读，不自动写文档
+  stub_only  - AI 只追加骨架，不覆盖已有内容（推荐）
+  full       - AI 可完整修改文档
+
+  选择模式 [stub_only]:                   ← 直接回车用推荐值
+
+================================================
+  即将为以下项目生成 .doc-guard.yaml：
+    lhx-care-server  (java-spring)
+    lhx-care-web     (vue-ts)
+    lhx-care-app     (uniapp)
+
+  确认生成？[Y/n]:                        ← 回车确认
+
+  生成 lhx-care-server (java-spring)...
+    ✓ /Users/alice/work/qh/lhx-care-server/.doc-guard.yaml
+  生成 lhx-care-web (vue-ts)...
+    ✓ /Users/alice/work/qh/lhx-care-web/.doc-guard.yaml
+  ...
+
+================================================
+  初始化完成！
 ```
 
 ---
 
-#### VS Code + Cline
+## 第五步：让 AI 初始化文档
 
-1. 打开 VS Code → 侧边栏点击 Cline 图标 → 点击右上角齿轮 → 「MCP Servers」→「Edit MCP Settings」
-2. 在打开的 `cline_mcp_settings.json` 中添加：
-
-```json
-{
-  "mcpServers": {
-    "doc-guard": {
-      "command": "node",
-      "args": ["/你的工作区绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
-      "env": {
-        "DOCGUARD_ROOT": "/你的工作区绝对路径"
-      }
-    }
-  }
-}
-```
-
-3. 保存文件，Cline 会自动重新加载 MCP 配置。
-
----
-
-> **工作区绝对路径**：指包含 `mcp-doc-guardian` 的父目录，例如你的项目根目录是 `/Users/yourname/work/qh`，则：
-> - `args` 路径为：`/Users/yourname/work/qh/mcp-doc-guardian/mcp-doc-guard/dist/index.js`
-> - `DOCGUARD_ROOT` 为：`/Users/yourname/work/qh`
-
----
-
-## 第三步：为你的项目生成配置
-
-```bash
-# 格式：./scripts/setup-project.sh <项目名> <技术栈> <项目路径>
-./scripts/setup-project.sh my-server java-spring ../my-server
-./scripts/setup-project.sh my-web    vue-ts      ../my-web
-```
-
-支持的技术栈：`java-spring` · `java-gradle` · `vue-ts` · `uniapp` · `go` · `python` · `react-ts`
-
----
-
-## 第四步：让 AI 初始化文档
-
-在 AI 对话框中发送：
+在 AI 对话框（CodeBuddy / Cursor / Claude 任一）中直接发送：
 
 ```
 请执行 doc_cold_start
 ```
 
-```
-你：  请执行 doc_cold_start
-
-AI：  [调用 doc_cold_start]
-      ✓ 已为 my-server 生成：
-        → docs/project/api.md（存根）
-        → docs/project/database.md（存根）
-        → docs/changelogs/CHANGELOG.md
-      ✓ 已为 my-web 生成：
-        → docs/project/api.md（存根）
-      全部完成，共生成 3 个文档。
-```
+AI 会自动调用 MCP 工具，为每个项目生成缺失的文档骨架（api.md、database.md、CHANGELOG.md 等存根文件）。
 
 ---
 
-## 完成！下一步做什么？
+## 完成！日常怎么用？
 
 改完代码后，直接告诉 AI：
 
@@ -196,52 +231,49 @@ AI：  [调用 doc_cold_start]
 我刚修改了 UserController，帮我检查文档有没有同步。
 ```
 
-AI 会自动调用 `check_api_sync`，告诉你哪里没同步，并帮你补上。
+AI 会调用 `check_api_sync`，告诉你哪里没同步并帮你补上。
 
 ---
 
 ## 常用指令速查
 
-> 以下内容直接在 AI 对话框中发送即可，无需在终端执行。
+在 AI 对话框中直接发送，无需在终端操作：
 
-| 你想做什么 | 告诉 AI |
-|-----------|--------|
+| 你想做什么 | 发给 AI 的内容 |
+|-----------|--------------|
 | 初始化所有文档存根 | `请执行 doc_cold_start` |
-| 查看整个团队的文档状态 | `请查看团队文档状态` |
-| 检查某个项目文档健康度 | `请检查 lhx-care-server 的文档健康度` |
-| 检查 API 文档是否同步 | `请检查 lhx-care-server 的 API 文档是否同步` |
+| 检查某项目 API 文档是否同步 | `请检查 lhx-care-server 的 API 文档是否同步` |
+| 检查数据库文档是否同步 | `请检查 lhx-care-server 的数据库文档是否同步` |
+| 查看整个团队的文档健康状态 | `请查看团队文档状态` |
+| 查看单个项目文档健康度 | `请检查 lhx-care-server 的文档健康度` |
 | 发起一个变更提案 | `请为 lhx-care-server 发起变更提案，标题：新增订单接口` |
 | 查看 pending changelog | `请查看 lhx-care-server 的 pending changelog 状态` |
 
 ---
 
-## 注意事项
+## 常见问题
 
-<details>
-<summary>权限模式说明（allow_doc_write）</summary>
+**Q：运行 setup-all.sh 报 "Permission denied"**
 
-| 模式 | 效果 |
-|------|------|
-| `false` | AI 只读，不写文档 |
-| `stub_only` | **推荐**：只追加骨架，不覆写已有内容 |
-| `full` | AI 可完整修改文档，需团队评审后开启 |
+```bash
+chmod +x scripts/setup-all.sh
+./scripts/setup-all.sh
+```
 
-</details>
+**Q：doc-guard-init.sh 扫描不到我的项目**
 
-<details>
-<summary>Agent2 审查在非 CodeBuddy 环境下的行为</summary>
+确认项目目录下有以下文件之一：`pom.xml`、`package.json`、`go.mod`、`requirements.txt`、`build.gradle`。如果没有，向导会让你手动输入项目名和技术栈。
 
-`notify-agent2.js` 依赖 `kiro-cli`。在其他 AI 工具中，Agent2 触发会自动 fallback，将任务写入 `.review-requested/.agent2-queue.jsonl`，等待下次轮询处理。不影响正常使用。
+**Q：IDE 里 MCP 列表没有出现 doc-guard**
 
-</details>
+- 确认配置 JSON 格式正确（可用 [jsonlint.com](https://jsonlint.com) 校验）
+- 确认 `dist/index.js` 文件存在（第二步构建成功后才有）
+- 重启 IDE
 
-<details>
-<summary>CI 校验（GitHub Actions）</summary>
+**Q：`doc_cold_start` 报错说找不到项目**
 
-`.github/workflows/doc-guard-validate.yml` 已预置，会在每次 PR 时自动运行 `--validate-only` 校验所有 `.doc-guard.yaml` 配置文件是否合法。
-
-</details>
+确认 `DOCGUARD_ROOT` 路径下有 `.doc-guard.yaml` 文件（第四步生成的）。
 
 ---
 
-遇到问题？查看 [README](./README.zh.md) 或提 Issue。
+遇到其他问题？查看 [README.zh.md](./README.zh.md) 或提 [Issue](https://github.com/Michael-xm/mcp-doc-guardian/issues)。

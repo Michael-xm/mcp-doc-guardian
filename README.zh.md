@@ -36,39 +36,49 @@ AI：  [调用 check_api_sync]
 
 ## 快速开始
 
-**第一步 — 构建**
+**第一步 — 一键构建并配置**
+
+在 `mcp-doc-guardian` 目录下运行：
 
 ```bash
-cd mcp-doc-guardian/mcp-doc-guard
-npm install && npm run build
+./scripts/setup-all.sh
 ```
+
+该命令自动完成：构建 MCP Server、安装 git hooks、生成 IDE 所需的 MCP 配置文件。
 
 **第二步 — 接入 IDE**
 
-在 MCP 配置中添加以下内容（CodeBuddy / Cursor / Claude Desktop 均适用）：
+第一步完成后，将生成好的配置导入你的 IDE：
+
+- **CodeBuddy**：打开 `.codebuddy/mcp.json`，复制内容 → CodeBuddy → MCP → `+ 配置 MCP` → 粘贴保存
+- **Cursor**：配置已自动写入 `<工作区>/.cursor/mcp.json`，重启 Cursor 即可
+- **其他 IDE**：使用下方 JSON，替换两处路径后粘贴到 MCP 设置中
 
 ```json
 {
   "mcpServers": {
-    "doc-guardian": {
+    "doc-guard": {
       "command": "node",
       "args": ["/绝对路径/mcp-doc-guardian/mcp-doc-guard/dist/index.js"],
       "env": {
-        "DOCGUARD_ROOT": "/绝对路径/你的工作区"
+        "DOCGUARD_ROOT": "/绝对路径/工作区根目录"
       }
     }
   }
 }
 ```
 
-**第三步 — 初始化项目**
+> **什么是工作区根目录？** 就是 `mcp-doc-guardian` 所在的那一层父目录。  
+> 例如克隆到 `/Users/你/work/qh/mcp-doc-guardian`，则 `DOCGUARD_ROOT` 填 `/Users/你/work/qh`。
+
+**第三步 — 初始化项目配置**
 
 ```bash
-# 为你的项目生成配置文件（选择对应技术栈）
-./scripts/setup-project.sh my-server java-spring ../my-server
+# 推荐：交互式向导，自动扫描识别技术栈
+bash scripts/doc-guard-init.sh
 
-# 或者一键初始化所有配置
-./scripts/setup-all.sh
+# 或手动为单个项目生成配置
+./scripts/setup-project.sh my-server java-spring ../my-server
 ```
 
 **第四步 — 开始使用**
@@ -76,7 +86,7 @@ npm install && npm run build
 在 AI 对话框中发送：
 
 ```
-请执行 doc_cold_start，为这个项目初始化文档。
+请执行 doc_cold_start
 ```
 
 完成。哨兵开始工作了。
