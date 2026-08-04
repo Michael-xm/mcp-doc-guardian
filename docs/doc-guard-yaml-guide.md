@@ -7,12 +7,12 @@
 
 ## 一份真实配置长什么样
 
-以下是 `lhx-care-web` 项目的完整配置，后文会逐段解释每个字段的含义：
+以下是 `my-app` 项目的完整配置，后文会逐段解释每个字段的含义：
 
 ```yaml
 # .doc-guard.yaml - 由 doc-guard-init.sh 生成
 schema_version: "1.0"
-project: lhx-care-web
+project: my-app
 type: vue-ts
 mode: standalone
 description: ""
@@ -319,7 +319,7 @@ coverage_baseline:
 **Q：`triggers` 里的路径是相对于哪里的？**
 
 相对于 `DOCGUARD_ROOT`（即工作区根目录），不是项目目录。  
-例如 `lhx-care-web` 项目的 `"src/api/**/*.ts"` 实际匹配的是 `DOCGUARD_ROOT/lhx-care-web/src/api/**/*.ts`。
+例如 `my-app` 项目的 `"src/api/**/*.ts"` 实际匹配的是 `DOCGUARD_ROOT/my-app/src/api/**/*.ts`。
 
 **Q：`auto_write` 和 `skill.allow_doc_write` 有什么区别？**
 
