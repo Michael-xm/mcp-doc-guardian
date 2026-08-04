@@ -14,13 +14,16 @@
 
 ## 上下文说明
 
-工具返回结果中包含：
+工具返回结果中包含（字段按场景不同而异）：
 
-- `changed_annotations`：本次变更的接口列表（Controller 类名、方法名、注解内容）
-- `api_doc_path`：需要更新的目标文档路径
-- `git_context`：当前分支与 commit 信息（可用于判断变更范围）
+| 字段 | 来源工具 | 含义 |
+|------|---------|------|
+| `changed_annotations` | `check_api_sync` | 本次变更的接口列表（Controller 类名、方法名、注解内容） |
+| `source_globs` | `doc_cold_start` | 源码文件 glob 模式，**首次生成时需读取这些文件扫描接口** |
+| `doc_path` / `api_doc_path` | 两者均有 | 需要写入的目标文档路径 |
+| `git_context` | `check_api_sync` | 当前分支与 commit 信息 |
 
-若 `api_doc_path` 文件不存在，执行**首次生成**；已存在则执行**增量更新**。
+若目标文档不存在，执行**首次生成**；已存在则执行**增量更新**。
 
 ---
 
@@ -28,7 +31,17 @@
 
 ### 首次生成
 
-按以下格式从 `changed_annotations` 中提取所有接口，生成完整文档。
+**场景 A：来自 `check_api_sync`（有 `changed_annotations`）**
+
+从 `changed_annotations` 中提取所有接口，按格式生成完整文档。
+
+**场景 B：来自 `doc_cold_start`（有 `source_globs`，无 `changed_annotations`）**
+
+1. 读取 `source_globs` 匹配的所有源码文件（Controller/接口文件）
+2. 扫描文件中的路由注解（`@GetMapping`、`@PostMapping`、`@RequestMapping`、`export function` 等）
+3. 提取接口信息（方法、路径、权限标识、描述），按模块分组
+4. 按下方格式生成完整文档
+5. **禁止**在未读取源码文件的情况下凭推测生成接口内容
 
 ### 增量更新（文件已存在）
 

@@ -14,14 +14,17 @@
 
 ## 上下文说明
 
-工具返回结果中包含：
+工具返回结果中包含（字段按场景不同而异）：
 
-- `uncovered`：本次变更但文档未覆盖的实体/Mapper 文件列表（含路径和变更摘要）
-- `changed_entities`：本次所有变更实体的数量
-- `db_doc_path`：需要更新的目标文档路径
-- `coverage_ratio`：当前覆盖率（可用于判断是否首次生成）
+| 字段 | 来源工具 | 含义 |
+|------|---------|------|
+| `uncovered` | `check_db_sync` | 本次变更但文档未覆盖的实体/Mapper 文件列表 |
+| `changed_entities` | `check_db_sync` | 本次所有变更实体的数量 |
+| `source_globs` | `doc_cold_start` | 实体/Mapper 文件 glob 模式，**首次生成时需读取这些文件扫描表结构** |
+| `doc_path` / `db_doc_path` | 两者均有 | 需要写入的目标文档路径 |
+| `coverage_ratio` | `check_db_sync` | 当前覆盖率 |
 
-若 `db_doc_path` 文件不存在，执行**首次生成**；已存在则执行**增量更新**。
+若目标文档不存在，执行**首次生成**；已存在则执行**增量更新**。
 
 ---
 
@@ -29,7 +32,17 @@
 
 ### 首次生成
 
+**场景 A：来自 `check_db_sync`（有 `uncovered`）**
+
 从 `uncovered` 中的实体文件提取所有表结构，按格式生成完整文档。
+
+**场景 B：来自 `doc_cold_start`（有 `source_globs`，无 `uncovered`）**
+
+1. 读取 `source_globs` 匹配的所有实体/Mapper 文件
+2. 扫描字段定义、注解（`@TableName`、`@Column`、`@ApiModelProperty`、`@Schema` 等）
+3. 按表名推断规则确定表名，按字段信息提取优先级获取字段说明
+4. 按下方格式生成完整文档
+5. **禁止**在未读取实体文件的情况下凭推测生成表结构
 
 ### 增量更新（文件已存在）
 

@@ -89,9 +89,12 @@ export async function docColdStart(
       // 加载写作提示词（无论是否有写权限，都要一并返回给 Agent）
       const write_prompt = loadWritePrompt(docType, (docConfig as { auto_write_template?: string }).auto_write_template, root);
 
-      // 权限检查：allow_doc_write 为 false/undefined 时不直接写文件，返回任务清单供 Agent1 执行
+      // 权限检查：
+      //   false / undefined / "stub_only" → 不直接写文件，返回任务清单供 Agent 执行
+      //   true / "full" → 直接生成 stub 文件
       const allowWrite = config.skill?.allow_doc_write;
-      if (!allowWrite) {
+      const canWrite = allowWrite === 'full';
+      if (!canWrite) {
         tasks.push({
           project: config.project,
           doc_type: docType,
