@@ -2,6 +2,34 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { glob } from 'glob';
 import type { DocGuardConfig, DocColdStartArgs, DocColdStartOutput, ColdStartTask } from '../types';
+import { DOCGUARD_ROOT } from '../config-loader';
+
+/** 默认提示词模板路径（相对于 DOCGUARD_ROOT） */
+const DEFAULT_PROMPTS: Record<string, string> = {
+  api: 'docs/agents/api-prompt.md',
+  database: 'docs/agents/database-prompt.md',
+  overview: 'docs/agents/overview-prompt.md',
+};
+
+function loadWritePrompt(docType: string, autoWriteTemplate: string | undefined, projectRoot: string): string | undefined {
+  try {
+    const templatePath = autoWriteTemplate ?? DEFAULT_PROMPTS[docType];
+    if (!templatePath) return undefined;
+
+    let resolved: string;
+    if (path.isAbsolute(templatePath)) {
+      resolved = templatePath;
+    } else if (templatePath.startsWith('.')) {
+      resolved = path.resolve(projectRoot, templatePath);
+    } else {
+      resolved = path.resolve(DOCGUARD_ROOT, templatePath);
+    }
+    if (!fs.existsSync(resolved)) return undefined;
+    return fs.readFileSync(resolved, 'utf-8');
+  } catch {
+    return undefined;
+  }
+}
 
 export async function docColdStart(
   args: DocColdStartArgs,
@@ -58,6 +86,9 @@ export async function docColdStart(
         sourceGlobs.push(...(docConfig.triggers ?? []));
       }
 
+      // 加载写作提示词（无论是否有写权限，都要一并返回给 Agent）
+      const write_prompt = loadWritePrompt(docType, (docConfig as { auto_write_template?: string }).auto_write_template, root);
+
       // 权限检查：allow_doc_write 为 false/undefined 时不直接写文件，返回任务清单供 Agent1 执行
       const allowWrite = config.skill?.allow_doc_write;
       if (!allowWrite) {
@@ -67,6 +98,7 @@ export async function docColdStart(
           doc_path: docConfig.path,
           status: 'pending',
           source_globs: sourceGlobs,
+          ...(write_prompt ? { write_prompt } : {}),
         });
         continue;
       }
@@ -87,6 +119,7 @@ export async function docColdStart(
         doc_path: docConfig.path,
         status: exists && args.force ? 'force_overwrite' : 'pending',
         source_globs: sourceGlobs,
+        ...(write_prompt ? { write_prompt } : {}),
       });
     }
   }

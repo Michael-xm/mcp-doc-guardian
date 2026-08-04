@@ -334,6 +334,8 @@ export interface ColdStartTask {
   doc_path: string;
   status: 'pending' | 'skipped' | 'force_overwrite';
   source_globs: string[];
+  /** 从 auto_write_template 加载的写作提示词，AI 应遵照其格式要求补全文档 */
+  write_prompt?: string;
 }
 export interface DocColdStartResult {
   total: number;
