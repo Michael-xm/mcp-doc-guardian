@@ -201,11 +201,18 @@ for i in "${!PROJECT_NAMES[@]}"; do
     path: docs/api.md
     triggers:
       - "src/api/**/*.ts"
+    auto_write_template: mcp-doc-guardian/docs/agents/api-prompt.md
+  env:
+    path: docs/env.md
+    triggers:
+      - ".env*"
+    auto_write_template: mcp-doc-guardian/docs/agents/env-prompt.md
   overview:
     path: docs/overview.md
     triggers:
       - "src/**/*.vue"
-      - "src/**/*.tsx"'
+      - "src/**/*.tsx"
+    auto_write_template: mcp-doc-guardian/docs/agents/overview-prompt.md'
       controller_section=""
       api_call_section='api_call:
   pattern: "src/**/*.{ts,vue,js}"
@@ -224,10 +231,22 @@ for i in "${!PROJECT_NAMES[@]}"; do
       - "**/*.vue"
       - "**/*.js"
       - "**/*.ts"
+    auto_write_template: mcp-doc-guardian/docs/agents/api-prompt.md
+  pages:
+    path: docs/pages.md
+    triggers:
+      - "src/pages/**"
+    auto_write_template: mcp-doc-guardian/docs/agents/pages-prompt.md
+  env:
+    path: docs/env.md
+    triggers:
+      - ".env*"
+    auto_write_template: mcp-doc-guardian/docs/agents/env-prompt.md
   overview:
     path: docs/overview.md
     triggers:
-      - "pages/**/*.vue"'
+      - "pages/**/*.vue"
+    auto_write_template: mcp-doc-guardian/docs/agents/overview-prompt.md'
       controller_section=""
       api_call_section='api_call:
   pattern: "src/**/*.{ts,vue,js}"
