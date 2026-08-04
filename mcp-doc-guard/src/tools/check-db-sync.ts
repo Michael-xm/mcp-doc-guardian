@@ -8,7 +8,7 @@ import type {
   CheckDbSyncOutput,
   DbSyncItem,
 } from '../types';
-import { DOCGUARD_ROOT } from '../config-loader';
+import { PACKAGE_ROOT } from '../config-loader';
 
 function loadWritePrompt(templatePath: string, projectRoot: string): string | undefined {
   try {
@@ -18,7 +18,7 @@ function loadWritePrompt(templatePath: string, projectRoot: string): string | un
     } else if (templatePath.startsWith('.')) {
       resolved = path.resolve(projectRoot, templatePath);
     } else {
-      resolved = path.resolve(DOCGUARD_ROOT, templatePath);
+      resolved = path.resolve(PACKAGE_ROOT, templatePath);
     }
     if (!fs.existsSync(resolved)) return undefined;
     return fs.readFileSync(resolved, 'utf-8');

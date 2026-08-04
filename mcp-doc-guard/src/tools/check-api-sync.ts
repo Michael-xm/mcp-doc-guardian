@@ -8,14 +8,14 @@ import type {
   ToolError,
 } from '../types';
 import type { DocGuardConfig } from '../types';
-import { DOCGUARD_ROOT } from '../config-loader';
+import { PACKAGE_ROOT } from '../config-loader';
 
 /**
  * 加载 auto_write_template 文件内容。
  * templatePath 支持以下格式：
  *   - 绝对路径：直接读取
  *   - 相对路径（以 . 开头）：相对于项目 _root 解析
- *   - 其他相对路径：相对于 DOCGUARD_ROOT 解析（方便指向 mcp-doc-guardian/docs/agents/）
+ *   - 其他相对路径：相对于 PACKAGE_ROOT（mcp-doc-guardian 根目录）解析
  */
 function loadWritePrompt(templatePath: string, projectRoot: string): string | undefined {
   try {
@@ -25,7 +25,7 @@ function loadWritePrompt(templatePath: string, projectRoot: string): string | un
     } else if (templatePath.startsWith('.')) {
       resolved = path.resolve(projectRoot, templatePath);
     } else {
-      resolved = path.resolve(DOCGUARD_ROOT, templatePath);
+      resolved = path.resolve(PACKAGE_ROOT, templatePath);
     }
     if (!fs.existsSync(resolved)) return undefined;
     return fs.readFileSync(resolved, 'utf-8');

@@ -12,6 +12,13 @@ const validate = ajv.compile(schema);
 /** v5.1：DOCGUARD_ROOT 支持独立 repo 场景，默认 cwd() */
 export const DOCGUARD_ROOT = process.env.DOCGUARD_ROOT ?? process.cwd();
 
+/**
+ * PACKAGE_ROOT：mcp-doc-guardian 根目录（即 mcp-doc-guard 的父目录）。
+ * 用 __dirname 锁定，不受运行时 cwd 影响。
+ * dist/config-loader.js → dist/ → mcp-doc-guard/ → mcp-doc-guardian/
+ */
+export const PACKAGE_ROOT = path.resolve(__dirname, '../..');
+
 export function loadAndValidateConfig(filePath: string): DocGuardConfig | null {
   try {
     const raw = yaml.load(fs.readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
