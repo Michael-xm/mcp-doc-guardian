@@ -219,7 +219,27 @@ bash scripts/doc-guard-init.sh
 请执行 doc_cold_start
 ```
 
-AI 会自动调用 MCP 工具，为每个项目生成缺失的文档骨架（api.md、database.md、CHANGELOG.md 等存根文件）。
+AI 会自动调用 MCP 工具，为每个项目创建文档目录结构和存根文件（`api.md`、`database.md`、`CHANGELOG.md` 等），此时文件里只有标题和占位结构，**内容是空的**。
+
+---
+
+### 第五步补充：填充文档内容
+
+骨架生成后，再触发 AI 扫描代码、把实际内容填进去：
+
+```
+请检查 my-server 的 API 文档是否同步
+```
+→ AI 扫描 Controller 路由注解，把缺失的接口写入 `api.md`
+
+```
+请检查 my-server 的数据库文档是否同步
+```
+→ AI 扫描 Entity / Mapper，把缺失的表结构写入 `database.md`
+
+> **为什么分两步？**
+> `doc_cold_start` 只负责「建档」，不会乱写内容；
+> 填充动作明确触发，你能看到 AI 扫了什么、写了什么，可以 review 后再接受。
 
 ---
 
