@@ -69,7 +69,7 @@ AI：  [调用 check_api_sync]
 ```
 
 > **什么是工作区根目录？** 就是 `mcp-doc-guardian` 所在的那一层父目录。  
-> 例如克隆到 `/Users/你/work/qh/mcp-doc-guardian`，则 `DOCGUARD_ROOT` 填 `/Users/你/work/qh`。
+> 例如克隆到 `/Users/你/work/mcp-doc-guardian`，则 `DOCGUARD_ROOT` 填 `/Users/你/work`。
 
 **第三步 — 初始化项目配置**
 

@@ -33,8 +33,8 @@
 将 `mcp-doc-guardian` 克隆到你的工作区目录下（和你的业务项目平级）：
 
 ```bash
-# 假设你的工作区是 ~/work/qh，业务项目也在这里
-cd ~/work/qh
+# 假设你的工作区是 ~/work，业务项目也在这里
+cd ~/work
 git clone https://github.com/Michael-xm/mcp-doc-guardian
 cd mcp-doc-guardian
 ```
@@ -42,7 +42,7 @@ cd mcp-doc-guardian
 克隆后你的目录结构应该是这样：
 
 ```
-~/work/qh/                     ← 这就是"工作区根目录"（后面会用到）
+~/work/                        ← 这就是"工作区根目录"（后面会用到）
 ├── mcp-doc-guardian/          ← 刚克隆的
 ├── lhx-care-server/           ← 你的业务项目 A
 ├── lhx-care-web/              ← 你的业务项目 B
@@ -141,8 +141,8 @@ cp .codebuddy/mcp.json ~/.claude/mcp.json
 - `args` 里的路径：指向 MCP Server 的入口文件（`dist/index.js`）
 - `DOCGUARD_ROOT`：**工作区根目录**，即 `mcp-doc-guardian` 的父目录
 
-> 举例：如果你克隆到 `/Users/alice/work/qh/mcp-doc-guardian`，  
-> 则 `DOCGUARD_ROOT` = `/Users/alice/work/qh`
+> 举例：如果你克隆到 `/Users/alice/work/mcp-doc-guardian`，  
+> 则 `DOCGUARD_ROOT` = `/Users/alice/work`
 
 `setup-all.sh` 已自动把这两个路径替换好，直接用生成的文件即可，无需手动改。
 
@@ -168,10 +168,10 @@ bash scripts/doc-guard-init.sh
   doc-guard 初始化向导
 ================================================
 
-  默认扫描工作区: /Users/alice/work/qh
+  默认扫描工作区: /Users/alice/work
 
-[步骤1] 工作区根目录 [/Users/alice/work/qh]（直接回车接受）:
-  → 使用: /Users/alice/work/qh
+[步骤1] 工作区根目录 [/Users/alice/work]（直接回车接受）:
+  → 使用: /Users/alice/work
 
 [步骤2] 扫描子项目...
   发现: lhx-care-server  →  java-spring
@@ -200,9 +200,9 @@ bash scripts/doc-guard-init.sh
   确认生成？[Y/n]:                        ← 回车确认
 
   生成 lhx-care-server (java-spring)...
-    ✓ /Users/alice/work/qh/lhx-care-server/.doc-guard.yaml
+    ✓ /Users/alice/work/lhx-care-server/.doc-guard.yaml
   生成 lhx-care-web (vue-ts)...
-    ✓ /Users/alice/work/qh/lhx-care-web/.doc-guard.yaml
+    ✓ /Users/alice/work/lhx-care-web/.doc-guard.yaml
   ...
 
 ================================================
