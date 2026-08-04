@@ -18,15 +18,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: doc-guard/mcp-doc-guard/package-lock.json
+          cache-dependency-path: mcp-doc-guard/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: doc-guard/mcp-doc-guard
+        working-directory: mcp-doc-guard
 
       - name: Build MCP server
         run: npm run build
-        working-directory: doc-guard/mcp-doc-guard
+        working-directory: mcp-doc-guard
 
       - name: Validate .doc-guard.yaml files
         # NOTE: 此步骤依赖 --validate-only 参数（Phase -1 交付后启用）
