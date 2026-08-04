@@ -85,29 +85,45 @@ export async function checkDbSync(
     patterns.some((pat) => minimatch(f, pat))
   );
 
-  // Draft 检测：database.md 含 [Draft] 标记时，无论 git diff 结果如何都需要补全
+  // Draft / 文件缺失检测：database.md 不存在或含 [Draft] 标记时，需要补全
   const dbDocAbsPath = path.join(root, config.docs.database.path);
-  if (fs.existsSync(dbDocAbsPath)) {
-    const dbContent = fs.readFileSync(dbDocAbsPath, 'utf-8');
-    if (dbContent.includes('[Draft]')) {
-      const templatePath =
-        config.docs.database?.auto_write_template ??
-        'mcp-doc-guardian/docs/agents/database-prompt.md';
-      const write_prompt = loadWritePrompt(templatePath, root);
-      return {
-        ok: true,
-        result: {
-          project,
-          changed_entities: 0,
-          covered: 0,
-          uncovered: [],
-          coverage_ratio: 0,
-          warning: true,
-          detail: `database.md 为 Draft 骨架，尚未补充实际内容，请根据源码补全文档`,
-          ...(write_prompt ? { write_prompt } : {}),
-        },
-      };
-    }
+  const dbTemplatePath =
+    config.docs.database?.auto_write_template ??
+    'mcp-doc-guardian/docs/agents/database-prompt.md';
+
+  if (!fs.existsSync(dbDocAbsPath)) {
+    const write_prompt = loadWritePrompt(dbTemplatePath, root);
+    return {
+      ok: true,
+      result: {
+        project,
+        changed_entities: 0,
+        covered: 0,
+        uncovered: [],
+        coverage_ratio: 0,
+        warning: true,
+        detail: `database.md 尚不存在，请根据源码创建并补全文档`,
+        ...(write_prompt ? { write_prompt } : {}),
+      },
+    };
+  }
+
+  const dbContent = fs.readFileSync(dbDocAbsPath, 'utf-8');
+  if (dbContent.includes('[Draft]')) {
+    const write_prompt = loadWritePrompt(dbTemplatePath, root);
+    return {
+      ok: true,
+      result: {
+        project,
+        changed_entities: 0,
+        covered: 0,
+        uncovered: [],
+        coverage_ratio: 0,
+        warning: true,
+        detail: `database.md 为 Draft 骨架，尚未补充实际内容，请根据源码补全文档`,
+        ...(write_prompt ? { write_prompt } : {}),
+      },
+    };
   }
 
   if (changedEntities.length === 0) {
