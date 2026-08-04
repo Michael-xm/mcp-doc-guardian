@@ -299,6 +299,10 @@ export interface CheckDbSyncResult {
   covered: number;
   uncovered: DbSyncItem[];
   coverage_ratio: number;
+  /** Draft 文档未补全时为 true */
+  warning?: boolean;
+  /** 补充说明 */
+  detail?: string;
   /** 从 docs.database.auto_write_template 加载的写作提示词，AI 应遵照其格式要求更新文档 */
   write_prompt?: string;
 }

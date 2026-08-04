@@ -233,6 +233,29 @@ export async function checkApiSync(
     }
   }
 
+  // Draft 检测：doc 文件含 [Draft] 标记时，无论 git diff 结果如何都需要补全
+  const apiDocPath = config.docs.api?.path;
+  if (apiDocPath) {
+    const apiDocAbsPath = path.join(root, apiDocPath);
+    if (fs.existsSync(apiDocAbsPath)) {
+      const content = fs.readFileSync(apiDocAbsPath, 'utf-8');
+      if (content.includes('[Draft]')) {
+        const templatePath =
+          config.docs.api?.auto_write_template ??
+          'mcp-doc-guardian/docs/agents/api-prompt.md';
+        const write_prompt = loadWritePrompt(templatePath, root);
+        return {
+          warning: true,
+          changed_annotations: [],
+          api_doc_updated: false,
+          git_context: gitContext,
+          detail: `api.md 为 Draft 骨架，尚未补充实际内容，请根据源码补全文档`,
+          ...(write_prompt ? { write_prompt } : {}),
+        };
+      }
+    }
+  }
+
   if (relevantFiles.length === 0) {
     return {
       warning: false,
@@ -265,7 +288,6 @@ export async function checkApiSync(
     };
   }
 
-  const apiDocPath = config.docs.api?.path;
   const apiDocUpdated = apiDocPath ? changedFiles.includes(apiDocPath) : false;
 
   // 加载写作提示词模板
