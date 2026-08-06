@@ -6,6 +6,7 @@ import type {
   ApplyDocPatchOutput,
   PatchApplyResult,
 } from '../types';
+import { syncSteering } from './sync-steering';
 
 export async function applyDocPatch(
   args: ApplyDocPatchArgs,
@@ -82,6 +83,17 @@ export async function applyDocPatch(
       lines_added: linesAdded,
       dry_run: args.dry_run ?? false,
     });
+  }
+
+  // 自动触发 steering 注入（非 dry_run 且有实际写入时）
+  if (!args.dry_run && applied.some((r) => r.lines_added > 0)) {
+    if (config.steering?.enabled !== false) {
+      try {
+        await syncSteering({ dry_run: false }, [config]);
+      } catch {
+        // steering 失败不影响主流程，静默跳过
+      }
+    }
   }
 
   return { ok: true, applied };

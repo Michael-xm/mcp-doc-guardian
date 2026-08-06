@@ -8,7 +8,7 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"/></a>
     <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/protocol-MCP-green.svg" alt="MCP"/>
-    <img src="https://img.shields.io/badge/tools-18-orange.svg" alt="Tools"/>
+    <img src="https://img.shields.io/badge/tools-19-orange.svg" alt="Tools"/>
   </p>
 </p>
 
@@ -55,6 +55,7 @@ See **[QUICK_START.md](./QUICK_START.md)** — 5 steps, about 5 minutes.
 
 | Capability | Description |
 |-----------|-------------|
+| **Doc injection into AI tools (Steering)** | When docs are generated or updated, automatically writes them into the project-level rules files of your installed AI tools (Kiro / Cursor / CodeBuddy / Claude Code / Trae / Cline / Windsurf), so AI starts every conversation already aware of your project context — no manual prompting needed |
 | **API doc sync detection** | Scans Controllers / HTTP calls, diffs against `api.md`, pinpoints every undocumented endpoint |
 | **Database doc sync detection** | Scans Entity / Mapper / SQL migration files, diffs against `database.md`, flags new fields or tables |
 | **Draft marker scanning** | Scans all docs for `[Draft]` / `[TODO]` markers, outputs a consolidated action list |
@@ -79,7 +80,7 @@ See **[QUICK_START.md](./QUICK_START.md)** — 5 steps, about 5 minutes.
 
 ---
 
-## All 18 tools
+## All 19 tools
 
 > These tools are called by the Agent as needed. You usually just describe what you want in plain language.
 
@@ -114,6 +115,8 @@ See **[QUICK_START.md](./QUICK_START.md)** — 5 steps, about 5 minutes.
 | `project_doc_health` | Single-project quality check | Doc coverage score + SOP compliance result |
 | `apply_doc_patch` | When Agent writes docs | Writes stub content to a doc node (requires `allow_doc_write`) |
 | `project_change_release` | At release time | Merges pending changelogs into main CHANGELOG, generates version record |
+| `fill_all_docs` | Bulk-fill doc content | Scans all projects for `[Draft]`-marked or missing docs, returns source file paths and write prompts for each; Agent fills them in batch |
+| `sync_steering` | Manual steering refresh | Writes specified docs into AI tool rules files; supports `cli` / `doc_types` multi-select filtering and `dry_run` preview mode |
 
 </details>
 
@@ -149,7 +152,74 @@ See **[QUICK_START.md](./QUICK_START.md)** — 5 steps, about 5 minutes.
 | Open a change proposal | `Propose a change for my-server: Add order endpoint` |
 | List all change tickets | `List all change tickets for my-server` |
 | Archive a finished change | `Archive change CHG-001 for my-server` |
+| Refresh all AI tool custom instructions | `sync steering` |
 | Claim a pending doc task | `Claim a pending doc task for my-server` |
+
+---
+
+## CLI update mechanisms and compatibility notes
+
+When docs are generated or updated, doc-guardian calls `syncAllClis` to write into each AI tool's rules files. Mechanisms differ by tool:
+
+### Write strategy comparison
+
+| AI tool | Rules file path | Strategy | Re-sync needed after doc update? |
+|--------|----------------|----------|----------------------------------|
+| **Kiro** | `.kiro/steering/<doc>.md` | Inline copy (with frontmatter) | **Yes** — send `sync steering` manually |
+| **Cursor** | `.cursor/rules/<doc>.mdc` | Inline copy (with frontmatter) | **Yes** — send `sync steering` manually |
+| **CodeBuddy** | `.codebuddy/rules/<doc>.md` | Symlink → source doc | **No** — updates automatically |
+| **Claude Code** | `CLAUDE.md` (project root) | Appends `@reference` block | **No** — Claude reads the latest source on every run |
+| **Trae** | `.trae/rules/project_rules.md` | Appends reference line | **Partial** — Trae 1.x has limited `@path` support; large files may be truncated; switch to `strategy: inline` if not working |
+| **Cline** | `.clinerules` | Inline copy (default) | **Yes** — send `sync steering` after doc updates; switch to `strategy: append` if your version supports `@path` |
+| **Windsurf** | `.windsurfrules` | Inline copy (default) | **Yes** — send `sync steering` after doc updates; switch to `strategy: append` if your version supports `@path` |
+
+### Kiro / Cursor — inline copy mode
+
+- Source doc content + YAML frontmatter are merged into a wrapper file; the AI tool reads the wrapper.
+- The wrapper is refreshed automatically on every `apply_doc_patch` or `doc_cold_start`.
+- After manually editing a source doc, send `sync steering` to refresh the wrapper.
+- The file header contains `<!-- generated at <time>, source-hash: <hash> -->` — don't delete it.
+- If the file already exists without that comment (user-created), doc-guardian skips it by default (pass `force: true` to override).
+- **Compatibility**: Kiro steering requires Kiro 0.2+; older versions don't read `.kiro/steering/`.
+
+### CodeBuddy — symlink mode
+
+- Creates a symlink in `.codebuddy/rules/` pointing to the source doc; CodeBuddy follows it transparently.
+- On Windows without symlink permission (EPERM), falls back to inline copy automatically.
+- **Compatibility**: requires a CodeBuddy version that supports `.codebuddy/rules/`.
+
+### Claude Code — `@reference` mode
+
+- Appends `@<doc_path>` inside a marker block in `CLAUDE.md`; Claude actively reads the referenced file.
+- If `CLAUDE.md` doesn't exist, doc-guardian creates it.
+- Idempotent — repeated runs don't duplicate the reference.
+- The `@` syntax is Claude Code CLI-specific; it doesn't work in the Claude web interface.
+- **Compatibility**: requires the `claude` CLI to be detectable in PATH, or `CLAUDE.md` to already exist.
+
+### Trae / Cline / Windsurf — inline / append mode
+
+- **Cline / Windsurf** default to `inline` strategy: full doc content is written directly into the rules file. Manual `sync steering` required after doc updates.
+- **Trae** uses append strategy by default: appends `# doc-guardian:<docType>: @<path>` reference lines; idempotent.
+- **Compatibility details**:
+  - **Trae 1.x**: limited `@path` reference support; large files risk truncation. Switch to `custom_cli` + `strategy: inline` if needed.
+  - **Cline (all current versions)**: does **not** follow `@path` references — only reads the rules file body. doc-guardian defaults to `inline` strategy for Cline; manual `sync steering` required after doc updates.
+  - **Windsurf (all current versions)**: same as Cline — `@path` references not supported; defaults to `inline`.
+- **Cline detection**: checks for `~/.vscode/extensions/saoudrizwan.claude-dev*` (VSCode extension).
+- **Trae detection**: checks for `~/.trae` directory or `trae` command in PATH.
+
+### `inclusion` and `globs` scope
+
+These fields apply **only to Kiro / Cursor** (inline wrapper tools), controlling when the wrapper is loaded (always / on matching files). They are ignored for append-mode tools (Trae / Cline / Windsurf / Claude Code).
+
+### Custom tools
+
+Add any unsupported tool via `custom_cli` in `.doc-guard.yaml` (see [config reference](./docs/doc-guard-yaml-guide.md)):
+
+| Strategy | Use case |
+|----------|---------|
+| `append` | Single rules file that supports `@reference` syntax |
+| `symlink` | Directory-based rules; tool follows symlinks |
+| `inline` | No reference support; full content injection (manual sync required) |
 
 ---
 

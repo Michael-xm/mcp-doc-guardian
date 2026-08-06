@@ -1,6 +1,6 @@
 # mcp-doc-guardian 快速上手
 
-> **目标**：让你的 AI Agent（CodeBuddy / Cursor / Claude Code 等）能感知代码变更，并自动检查文档有没有同步更新。
+> **目标**：让你的 AI Agent（CodeBuddy / Cursor / Claude Code / Trae / Kiro / Windsurf / Cline 等）能感知代码变更，并自动检查文档有没有同步更新。
 
 ---
 
@@ -8,7 +8,7 @@
 
 - Node.js >= 18（在终端运行 `node -v` 确认版本）
 - Git
-- 已安装支持 MCP 的 AI 工具：CodeBuddy / Cursor / Claude Code CLI / VS Code+Cline 任一即可
+- 已安装支持 MCP 的 AI 工具：CodeBuddy / Cursor / Claude Code CLI / Trae / Kiro / Windsurf / VS Code+Cline 任一即可
 
 ---
 
@@ -23,7 +23,9 @@
    ↓
 第四步  bash scripts/doc-guard-init.sh  （为你的项目生成 .doc-guard.yaml）
    ↓
-第五步  在 AI 对话框发送 "请执行 doc_cold_start"，完成！
+第五步  在 AI 对话框发送 "请执行 doc_cold_start"  （生成文档骨架）
+   ↓
+第六步  在 AI 对话框发送 "请执行 fill_all_docs"   （一键补全所有文档内容）
 ```
 
 ---
@@ -119,6 +121,51 @@ cp .codebuddy/mcp.json ~/.claude/mcp.json
 
 ---
 
+### Trae
+
+Trae 使用项目级规则文件来加载 MCP：
+
+1. 在你的**工作区根目录**下创建或编辑 `.trae/mcp.json`（若不存在请新建）
+2. 将 `.codebuddy/mcp.json` 的内容粘贴进去（内容结构完全一致）
+3. 重启 Trae，在 MCP 面板中确认 `doc-guard` 已加载
+
+```bash
+# 也可以直接复制
+mkdir -p $(dirname $(pwd))/.trae
+cp .codebuddy/mcp.json $(dirname $(pwd))/.trae/mcp.json
+```
+
+---
+
+### Kiro
+
+Kiro 支持通过 `.kiro/settings/mcp.json` 加载 MCP Server：
+
+1. 在你的**工作区根目录**下创建或编辑 `.kiro/settings/mcp.json`
+2. 将 `.codebuddy/mcp.json` 的内容粘贴进去
+3. 重启 Kiro，在 MCP 面板中确认 `doc-guard` 已加载
+
+```bash
+mkdir -p $(dirname $(pwd))/.kiro/settings
+cp .codebuddy/mcp.json $(dirname $(pwd))/.kiro/settings/mcp.json
+```
+
+---
+
+### Windsurf
+
+Windsurf 使用全局 MCP 配置文件 `~/.codeium/windsurf/mcp_config.json`：
+
+```bash
+# 将配置合并到 Windsurf 的全局 MCP 配置
+# 若文件不存在直接复制；若已存在请手动将 mcpServers 中的 doc-guard 段合并进去
+cp .codebuddy/mcp.json ~/.codeium/windsurf/mcp_config.json
+```
+
+保存后重启 Windsurf，在「Cascade → MCP」面板中确认 `doc-guard` 出现即可。
+
+---
+
 ### 配置内容说明
 
 所有 IDE 使用同一份配置结构：
@@ -156,10 +203,11 @@ cp .codebuddy/mcp.json ~/.claude/mcp.json
 bash scripts/doc-guard-init.sh
 ```
 
-向导会做三件事：
+向导会依次完成：
 1. **自动扫描**工作区下的所有子项目，识别技术栈（Java/Vue/Go/Python 等）
 2. **让你确认**识别结果，有误的直接输入正确值（无误直接回车跳过）
 3. **一次性选择**文档写入权限，生成所有项目的 `.doc-guard.yaml`
+4. **询问是否开启自定义指令注入**（Steering），并自动检测你已安装的 AI 工具
 
 示例交互（全程大约 30 秒）：
 
@@ -191,6 +239,38 @@ bash scripts/doc-guard-init.sh
 
   选择模式 [stub_only]:                   ← 直接回车用推荐值
 
+[步骤5] 自定义指令同步（Steering 注入）:
+
+  自定义指令的作用：
+  doc-guardian 生成的 api.md / database.md / overview.md 等文档，默认只有
+  你的 AI Agent 通过 MCP 工具主动读取时才能感知。开启"自定义指令注入"后，
+  这些文档会被自动写入你的 AI 工具的项目级规则文件（如 .kiro/steering/、
+  .cursor/rules/、.codebuddy/rules/ 等），让 AI 在每次对话开始时就自动
+  加载项目文档背景，无需手动提示。
+
+  检测到以下已安装的 AI 工具：
+    [✓] Cursor      →  .cursor/rules/<doc>.mdc
+    [✓] CodeBuddy   →  .codebuddy/rules/<doc>.md
+    [ ] Kiro        （未检测到）
+    [ ] Claude Code （未检测到）
+
+  是否开启 Steering 注入？[Y/n]:            ← 回车开启
+                                           ← 若输入 n：
+                                              已跳过。如需后续手动开启，在 AI 对话框
+                                              发送 "sync steering"，或修改
+                                              .doc-guard.yaml 中 steering.enabled: true
+
+  选择要注入的文档（空格多选，回车确认）:
+    [✓] overview  - 项目概览文档（推荐始终注入）
+    [✓] database  - 数据库结构文档
+    [ ] api       - API 接口文档（内容较长，按需选择）
+
+  ← 若未检测到任何工具，向导会提示：
+     未检测到任何已安装的 AI 工具。
+     A) 继续（steering 留空，后续手动配置）
+     B) 手动输入工具名（kiro/cursor/codebuddy/claude/trae/cline/windsurf）
+     请选择 [A]:
+
 ================================================
   即将为以下项目生成 .doc-guard.yaml：
     my-server  (java-spring)
@@ -207,11 +287,12 @@ bash scripts/doc-guard-init.sh
 
 ================================================
   初始化完成！
+  提示：生成初始文档后，在 AI 对话框发送 "sync steering" 可随时刷新自定义指令。
 ```
 
 ---
 
-## 第五步：让 AI 初始化文档
+## 第五步：让 AI 初始化文档骨架
 
 在 AI 对话框（CodeBuddy / Cursor / Claude 任一）中直接发送：
 
@@ -223,35 +304,39 @@ AI 会自动调用 MCP 工具，为每个项目创建文档目录结构和存根
 
 ---
 
-### 第五步补充：填充文档内容
+## 第六步：一键补全所有文档内容
 
-骨架生成后，发送下面这条指令，让 AI **一次性**扫描所有项目并填充内容：
-
-```
-请依次为所有已注册项目执行文档填充：
-1. 调用 check_api_sync 检查并补全各项目的 API 文档
-2. 调用 check_db_sync 检查并补全各项目的数据库文档
-```
-
-AI 会依次为每个项目跑完 API + 数据库两轮扫描，结束后汇报哪些接口、哪些表被补全了。
-
----
-
-如果只想填充某一个项目，也可以单独发：
+骨架生成后，继续在 AI 对话框发送：
 
 ```
-请检查 my-server 的 API 文档是否同步
+请执行 fill_all_docs
 ```
-→ 只扫 `my-server` 的 Controller，补写 `api.md`
+
+AI 会自动调用 `fill_all_docs` 工具，扫描所有项目中含 `[Draft]` 标记或缺失的文档，逐一读取对应源码并按照你配置的写作规范（`auto_write_template`）补全每个文档的实际内容。
+
+**`fill_all_docs` 做什么：**
+
+| 文档类型 | 读取来源 | 写作规范 |
+|---------|---------|---------|
+| `api` | Controller / API 调用层文件 | `docs/agents/api-prompt.md` 或你配置的模板 |
+| `database` | Entity / Mapper / Migration 文件 | `docs/agents/database-prompt.md` 或你配置的模板 |
+| `overview` | 项目目录结构 + 主要模块 | `docs/agents/overview-prompt.md` 或你配置的模板 |
+| 自定义文档 | `.doc-guard.yaml` 中 `triggers` 指定的文件 | `auto_write_template` 指定的模板 |
+| `changelog` | — | 自动跳过（由变更流程管理） |
+
+**按项目或文档类型过滤：**
 
 ```
-请检查 my-server 的数据库文档是否同步
+请执行 fill_all_docs，只处理 my-server 项目
 ```
-→ 只扫 `my-server` 的 Entity / Mapper，补写 `database.md`
+
+```
+请执行 fill_all_docs，只补全 api 和 database 类型
+```
 
 > **为什么骨架和填充分开？**
-> `doc_cold_start` 只负责「建档」，不写任何内容；
-> 填充动作明确触发，你能看到 AI 扫了什么、写了什么，可以 review 后再接受。
+> `doc_cold_start` 只负责「建档」；`fill_all_docs` 负责「填内容」。
+> 填充前你可以先看 stub 结构是否符合预期，再统一补全。
 
 ---
 
@@ -267,6 +352,58 @@ AI 会调用 `check_api_sync`，告诉你哪里没同步并帮你补上。
 
 ---
 
+## 手动同步自定义指令
+
+如果你在初始化时没有开启 Steering，或者后来修改了 `.doc-guard.yaml` 的 steering 配置，可以随时手动同步：
+
+**方式一：AI 对话框（推荐）**
+
+```
+请同步自定义指令 / sync steering
+```
+
+AI 会调用 `sync_steering` 工具，检测已安装的工具，并把最新文档内容写入对应的规则文件。
+
+> 即使在初始化时选择了不开启 Steering（`steering.enabled: false`），手动发送 `sync steering` 仍然会执行写入。`enabled` 只控制文档更新时的**自动触发**，手动命令始终有效。
+
+**方式二：指定工具或文档类型**
+
+```
+请只把 overview 文档同步到 Cursor 的自定义指令
+```
+
+```
+请只同步 Kiro 和 CodeBuddy 的自定义指令
+```
+
+**支持多选的场景：**
+
+`sync_steering` 工具支持 `cli` 参数（指定哪些工具）和 `doc_types` 参数（指定哪些文档），两者都支持多选：
+
+| 你想做什么 | 发给 AI 的内容 |
+|-----------|--------------|
+| 刷新所有工具的自定义指令 | `sync steering` |
+| 只刷新 Cursor 的 | `sync steering，只刷新 Cursor` |
+| 只刷新 overview 文档 | `sync steering，只刷新 overview 文档` |
+| 预览会写哪些文件（不实际写入）| `dry run sync steering` |
+
+**各 AI 工具的规则文件位置：**
+
+| AI 工具 | 规则文件路径 | 写入方式 |
+|--------|------------|---------|
+| Kiro | `.kiro/steering/<doc>.md` | 内联副本（含 frontmatter），文档更新后需重新 sync |
+| Cursor | `.cursor/rules/<doc>.mdc` | 内联副本（含 frontmatter），文档更新后需重新 sync |
+| CodeBuddy | `.codebuddy/rules/<doc>.md` | 软链接，源文档更新自动生效 |
+| Claude Code | `CLAUDE.md`（项目根）| `@引用` 块，源文档更新自动生效 |
+| Trae | `.trae/rules/project_rules.md` | 追加引用路径行，源文档更新自动生效 |
+| Cline | `.clinerules` | 追加引用路径行，源文档更新自动生效 |
+| Windsurf | `.windsurfrules` | 追加引用路径行，源文档更新自动生效 |
+
+> Kiro / Cursor 使用内联副本，每次源文档更新后需手动发送 `sync steering` 刷新。  
+> 其他工具使用引用或软链接，源文档改动后无需操作。
+
+---
+
 ## 常用指令速查
 
 在 AI 对话框中直接发送，无需在终端操作：
@@ -274,10 +411,13 @@ AI 会调用 `check_api_sync`，告诉你哪里没同步并帮你补上。
 | 你想做什么 | 发给 AI 的内容 |
 |-----------|--------------|
 | 初始化所有文档存根 | `请执行 doc_cold_start` |
+| 一键补全所有文档内容 | `请执行 fill_all_docs` |
+| 只补全某项目的文档 | `请执行 fill_all_docs，只处理 my-server` |
 | 检查某项目 API 文档是否同步 | `请检查 my-server 的 API 文档是否同步` |
 | 检查数据库文档是否同步 | `请检查 my-server 的数据库文档是否同步` |
 | 查看整个团队的文档健康状态 | `请查看团队文档状态` |
 | 查看单个项目文档健康度 | `请检查 my-server 的文档健康度` |
+| 刷新所有工具的自定义指令 | `sync steering` |
 | 发起一个变更提案 | `请为 my-server 发起变更提案，标题：新增订单接口` |
 | 查看 pending changelog | `请查看 my-server 的 pending changelog 状态` |
 

@@ -425,7 +425,152 @@ skill:
 
 ---
 
-## 常见问题
+## `steering`（可选）
+
+控制文档自动注入到 AI 工具的行为。开启后，每次执行 `apply_doc_patch` 或 `doc_cold_start` 时，doc-guardian 会自动将指定文档写入已检测到的 AI 工具规则文件中。
+
+```yaml
+steering:
+  enabled: true                  # 是否开启 Steering（默认 false）
+  doc_types:                     # 要注入的文档类型（对应 docs.* 的节点名）
+    - overview
+    - database
+    # - api                      # 内容较长，按需开启
+  clis:                          # 要注入的 AI 工具（不填则注入所有检测到的工具）
+    - kiro
+    - cursor
+    - codebuddy
+    - claude-code
+    - trae
+    - cline
+    - windsurf
+  inclusion: always              # always（始终加载）或 fileMatch（仅匹配文件时加载，仅 Kiro / Cursor 有效）
+  globs: []                      # inclusion: fileMatch 时生效的文件 glob 列表
+  force: false                   # true：覆盖用户手动创建的同名文件（默认 false）
+  custom_cli:                    # 扩展不在内置列表中的 AI 工具
+    - id: my-tool
+      name: "My Custom IDE"
+      detect:                    # 检测该工具是否已安装的条件（满足任意一项即视为已安装）
+        bin: my-tool             # 可执行文件名（在 PATH 中搜索）
+        dir: "~/.my-tool"        # 目录是否存在
+        env: MY_TOOL_HOME        # 环境变量是否存在
+      strategy: append           # append | symlink | inline
+      target: ".my-tool/rules/project.md"   # 规则文件路径（相对于项目根目录）
+```
+
+### `steering.enabled`
+
+| 值 | 行为 |
+|----|------|
+| `true` | 每次生成/更新文档时，自动调用 `syncAllClis`，写入规则文件 |
+| `false`（默认）| 不自动写入，仅在手动发送 `sync steering` 时执行 |
+
+### `steering.doc_types`
+
+指定哪些文档节点会被注入到 AI 工具的规则文件中。必须是 `docs.*` 下已声明的节点名。
+
+- 不填：默认注入所有 `docs.*` 下的节点
+- 推荐组合：`[overview, database]`（内容精简，适合始终加载）
+- `api` 文档通常较长，建议仅在项目接口稳定后按需加入
+
+### `steering.clis`
+
+指定要注入哪些 AI 工具。可用值：`kiro` / `cursor` / `codebuddy` / `claude-code` / `trae` / `cline` / `windsurf`。
+
+- 不填：注入所有**检测到已安装**的工具
+- 指定时：只注入列表内的工具（即使未检测到也会尝试写入）
+
+### `steering.inclusion` 和 `steering.globs`
+
+**仅对 Kiro / Cursor（内联 wrapper 类）有效**，控制 wrapper 文件何时被 AI 加载：
+
+| `inclusion` 值 | 行为 |
+|---------------|------|
+| `always`（默认）| 对话开始时始终加载该规则文件 |
+| `fileMatch` | 只有当当前对话中打开的文件匹配 `globs` 时才加载 |
+
+`fileMatch` 示例（只在编辑 Java 文件时加载数据库文档）：
+
+```yaml
+steering:
+  enabled: true
+  doc_types: [database]
+  inclusion: fileMatch
+  globs:
+    - "**/*.java"
+    - "**/*Mapper.xml"
+```
+
+对其他工具（Trae / Cline / Windsurf / Claude Code），`inclusion` 和 `globs` 字段被忽略，规则文件始终随会话加载。
+
+### `steering.custom_cli`
+
+扩展自定义 AI 工具。每个条目包含：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `id` | 是 | 工具标识符，全局唯一 |
+| `name` | 否 | 显示名称（用于日志输出）|
+| `detect.bin` | 否 | 在 `$PATH` 中搜索的可执行文件名 |
+| `detect.dir` | 否 | 检测目录是否存在（支持 `~` 展开）|
+| `detect.env` | 否 | 检测环境变量是否设置 |
+| `strategy` | 是 | `append` / `symlink` / `inline` |
+| `target` | 是 | 规则文件路径（相对于**每个业务项目**根目录）|
+
+`strategy` 三种写入策略详解：
+
+| 策略 | 行为 | 何时需要重新 sync |
+|------|------|----------------|
+| `append` | 在 `target` 文件末尾追加引用行（幂等）| 不需要，工具读取时跟随源文件 |
+| `symlink` | 在 `target` 目录下创建软链接（若 `target` 是目录则在目录内创建）| 不需要，软链接自动跟随 |
+| `inline` | 将源文档完整内容写入 `target`（含 doc-guardian header）| 需要，源文档更新后手动发送 `sync steering` |
+
+> **Trae / Cline / Windsurf 降级说明**：若注入后 AI 工具未能感知文档内容，说明该工具版本不跟随 `@path` 引用。此时可在 `custom_cli` 中为该工具配置 `strategy: inline`（内联副本），源文档更新后手动发送 `sync steering` 即可重新注入。
+
+---
+
+### 初始化向导与 steering 配置
+
+运行 `bash scripts/doc-guard-init.sh` 时，向导会根据你的选择自动将以下字段写入每个项目的 `.doc-guard.yaml`：
+
+| 向导操作 | 写入的字段 |
+|---------|-----------|
+| 选择开启 Steering | `steering.enabled: true` |
+| 选择文档类型 overview | `docs.overview.steering.inject: true` |
+| 不选择某个文档类型 | `docs.<type>.steering.inject: false` |
+| 检测到已安装的工具 | `steering.cli: [仅检测到的工具]` |
+| 选择 "n"（不开启）| `steering.enabled: false` |
+
+以下字段**不由向导生成**，需手动配置：`docs.<type>.steering.inclusion`、`docs.<type>.steering.globs`、`steering.force`、`steering.custom_cli`。
+
+向导写入示例（检测到 cursor + codebuddy，选择注入 overview + database）：
+
+```yaml
+steering:
+  enabled: true
+  cli:
+    - cursor
+    - codebuddy
+
+docs:
+  overview:
+    steering:
+      inject: true
+      inclusion: always
+  database:
+    steering:
+      inject: true
+      inclusion: fileMatch
+  api:
+    steering:
+      inject: false
+```
+
+向导执行完成后可直接使用，也可按上方字段说明手动调整。
+
+---
+
+
 
 **Q：`triggers` 里的路径是相对于哪里的？**
 

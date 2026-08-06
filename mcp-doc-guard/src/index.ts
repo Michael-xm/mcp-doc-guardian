@@ -35,6 +35,9 @@ import { teamDocStatus } from './tools/team-doc-status';
 import { projectDocHealth } from './tools/project-doc-health';
 import { applyDocPatch } from './tools/apply-doc-patch';
 import { projectChangeRelease } from './tools/project-change-release';
+import { syncSteering } from './tools/sync-steering';
+import { fillAllDocs } from './tools/fill-all-docs';
+import { checkGitSync } from './tools/check-git-sync';
 
 // ── validate-only 模式 ───────────────────────────────────────
 if (process.argv.includes('--validate-only')) {
@@ -171,11 +174,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'doc_cold_start',
-      description: '为所有已配置但缺失的文档文件生成初始 stub（幂等，默认跳过已有文件）',
+      description: '为所有已配置但缺失的文档文件生成初始 stub（幂等，默认跳过已有文件）。\n\n返回结果说明：\n- result.tasks[]: 每条任务代表一个需要补全的文档，包含以下字段：\n  - doc_path: 文档路径\n  - source_globs: 需要读取的源码 glob 模式\n  - write_prompt: 【重要】该文档的写作规范提示词，由 .doc-guard.yaml 中 auto_write_template 配置指定。补全该文档时，必须严格遵照此提示词中的角色定位、章节结构和格式要求来撰写内容，不得忽略。\n- result.next_action.quick_command: 一键补全所有文档的快捷指令，可直接作为下一条消息发送执行。',
       inputSchema: {
         type: 'object',
         properties: {
           force: { type: 'boolean', description: '强制覆写已有文件，默认 false' },
+          steering_inject_types: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '用户选择要注入到 AI 工具自定义指令的文档类型列表（如 ["overview","database"]）。指定后自动将对应文档的 steering.inject: true 写入 .doc-guard.yaml',
+          },
         },
       },
     },
@@ -290,6 +298,74 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
       },
     },
+    // ── 文档补全 ──
+    {
+      name: 'fill_all_docs',
+      description: '一键扫描所有项目的所有文档，对含 [Draft] 标记或缺失的文档，返回每个文档对应的源码读取路径、扫描重点和写作规范（来自 auto_write_template 配置）。\n\n【执行说明】调用后，按 result.tasks[] 逐条处理 status === "needs_fill" 的任务：\n1. 读取 task.source_globs 指定的源码文件\n2. 严格遵照 task.write_prompt 中的章节结构和格式要求撰写内容（不得忽略）\n3. 将完整内容写入 task.doc_path\n\n支持按项目、文档类型过滤，changelog 类型自动跳过。',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project: { type: 'string', description: '只处理指定项目，不填则处理所有项目' },
+          doc_types: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '只处理指定文档类型（如 ["api","database"]），不填则处理所有类型',
+          },
+          include_complete: {
+            type: 'boolean',
+            description: '是否强制包含已完成（无 [Draft]）的文档，默认 false',
+          },
+        },
+      },
+    },
+    // ── Git ──
+    {
+      name: 'check_git_sync',
+      description: '检测项目 Git 提交规范和分支命名规范，分析 base..HEAD 范围内的提交，返回不合规提交列表、分支规范检查结果及拆分建议',
+      inputSchema: {
+        type: 'object',
+        required: ['project'],
+        properties: {
+          project: { type: 'string' },
+          base: { type: 'string', description: 'git diff base，默认 HEAD~1' },
+          files: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '只分析指定文件（相对于项目根目录），不填则分析所有变更文件',
+          },
+        },
+      },
+    },
+    // ── Steering ──
+    {
+      name: 'sync_steering',
+      description: '将指定文档内容写入指定 AI 工具的规则文件；支持 cli / doc_types 多选过滤，以及 dry_run 预览模式',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          cli: {
+            oneOf: [
+              { type: 'string' },
+              { type: 'array', items: { type: 'string' } },
+            ],
+            description: '目标 AI 工具（kiro/cursor/codebuddy/claude/trae/cline/windsurf），不填则自动检测',
+          },
+          doc_types: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '要注入的文档类型，不填则用各项目 steering.doc_types 配置（或所有 docs 类型）',
+          },
+          dry_run: {
+            type: 'boolean',
+            description: '预览模式，只报告会写哪些文件，不实际写入',
+          },
+          force: {
+            type: 'boolean',
+            description: '强制覆盖：绕过 enabled:false 限制，覆盖已有的非生成文件和 hash 未变化的文件',
+          },
+        },
+      },
+    },
   ],
 }));
 
@@ -345,7 +421,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         result = await withTimeout(checkCustomDocSync(args as { project: string; doc_type: string; base?: string }, projects));
         break;
       case 'doc_cold_start':
-        result = await withTimeout(docColdStart(args as { force?: boolean }, projects));
+        result = await withTimeout(docColdStart(args as { force?: boolean; steering_inject_types?: string[] }, projects));
         break;
       case 'project_change_propose':
         result = await withTimeout(projectChangeProposeImpl(args as { project: string; id: string; title: string; change_type: 'feature' | 'bugfix' | 'refactor'; affects_projects?: string[] }, projects));
@@ -375,6 +451,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case 'project_change_release':
         result = await withTimeout(projectChangeRelease(args as { project: string; version: string }, projects));
+        break;
+
+      // Git
+      case 'check_git_sync':
+        result = await withTimeout(checkGitSync(args as { project: string; base?: string; files?: string[] }, projects));
+        break;
+
+      // 文档补全
+      case 'fill_all_docs':
+        result = await withTimeout(Promise.resolve(fillAllDocs(args as { project?: string; doc_types?: string[]; include_complete?: boolean }, projects)));
+        break;
+
+      // Steering
+      case 'sync_steering':
+        result = await withTimeout(syncSteering(args as { cli?: string | string[]; doc_types?: string[]; dry_run?: boolean; force?: boolean }, projects));
         break;
 
       default:

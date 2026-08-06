@@ -84,6 +84,91 @@
         }
       }
     },
+    "steering": {
+      "type": "object",
+      "description": "v5.9：Steering 注入配置（CLI 自动检测和文档注入）",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "false 则跳过所有 CLI 注入，默认 true"
+        },
+        "inject": {
+          "type": "boolean",
+          "description": "true 则对本项目所有文档类型执行注入，默认 false"
+        },
+        "clis": {
+          "type": "array",
+          "description": "指定要注入的 CLI id 列表，空数组表示自动检测全部内置 CLI",
+          "items": {
+            "type": "string"
+          }
+        },
+        "doc_types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "默认注入的文档类型列表，不填则对 docs 下所有类型执行"
+        },
+        "cli": {
+          "description": "auto（自动检测全部内置 CLI）或指定 CLI id 数组",
+          "oneOf": [
+            { "type": "string", "enum": ["auto"] },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["kiro", "cursor", "codebuddy", "claude", "trae", "cline", "windsurf"]
+              }
+            }
+          ]
+        },
+        "custom_cli": {
+          "type": "array",
+          "description": "扩展不在内置列表中的 CLI 工具，始终生效（不受 cli 字段控制）",
+          "items": {
+            "type": "object",
+            "required": ["id", "rules_file", "strategy"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "自定义标识符，不得与内置 CLI id 重名",
+                "pattern": "^(?!kiro$|cursor$|codebuddy$|claude$|droid$|trae$|cline$|windsurf$)[a-zA-Z0-9_-]{1,64}$"
+              },
+              "rules_file": {
+                "type": "string",
+                "description": "规则文件路径（相对项目根目录），不得以 .. 开头",
+                "pattern": "^(?!\\.\\.).*$"
+              },
+              "strategy": {
+                "type": "string",
+                "enum": ["append", "symlink", "inline"],
+                "description": "写入策略：append（追加引用行）| symlink（软链接）| inline（内联副本）"
+              },
+              "detect": {
+                "type": "object",
+                "description": "可选：CLI 安装检测条件，全部满足才写入；不填则始终写入",
+                "properties": {
+                  "bin": {
+                    "type": "string",
+                    "description": "检测 $PATH 中是否存在该可执行文件"
+                  },
+                  "dir": {
+                    "type": "string",
+                    "description": "检测目录是否存在（支持 ~ 前缀）"
+                  },
+                  "env": {
+                    "type": "string",
+                    "description": "检测环境变量是否已设置（非空）"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "controller": {
       "type": "object",
       "properties": {
@@ -108,7 +193,11 @@
           "type": "object",
           "required": ["path", "pending_path"],
           "properties": {
-            "path": { "type": "string" },
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)",
+              "description": "相对路径，不得以 / 开头（禁止绝对路径）"
+            },
             "pending_path": { "type": "string" },
             "format": { "type": "string", "enum": ["keepachangelog", "timestamp"] },
             "auto_version": { "type": "boolean" },
@@ -119,7 +208,11 @@
           "type": "object",
           "required": ["path"],
           "properties": {
-            "path": { "type": "string" },
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)",
+              "description": "相对路径，不得以 / 开头"
+            },
             "triggers": { "type": "array", "items": { "type": "string" } },
             "path_extract_regex": { "type": "string" },
             "contract_path": { "type": "string" },
@@ -130,34 +223,57 @@
               ]
             },
             "auto_write_template": { "type": "string" },
-            "note": { "type": "string" }
+            "note": { "type": "string" },
+            "steering": {
+              "$ref": "#/definitions/steeringDocConfig"
+            }
           }
         },
         "database": {
           "type": "object",
           "required": ["path"],
           "properties": {
-            "path": { "type": "string" },
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)",
+              "description": "相对路径，不得以 / 开头"
+            },
             "triggers": { "type": "array", "items": { "type": "string" } },
             "entity_pattern": { "type": "string" },
-            "migration_pattern": { "type": "string" }
+            "migration_pattern": { "type": "string" },
+            "auto_write_template": { "type": "string" },
+            "steering": {
+              "$ref": "#/definitions/steeringDocConfig"
+            }
           }
         },
         "overview": {
           "type": "object",
           "required": ["path"],
           "properties": {
-            "path": { "type": "string" },
-            "triggers": { "type": "array", "items": { "type": "string" } }
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)",
+              "description": "相对路径，不得以 / 开头"
+            },
+            "triggers": { "type": "array", "items": { "type": "string" } },
+            "auto_write_template": { "type": "string" },
+            "steering": {
+              "$ref": "#/definitions/steeringDocConfig"
+            }
           }
         }
       },
       "additionalProperties": {
         "type": "object",
-        "description": "v5.2：允许任意自定义文档类型（如 pages、specs、adr 等）",
+        "description": "v5.2：允许任意自定义文档类型（如 pages、specs、adr 等）；key 须符合 ^[a-zA-Z0-9_-]{1,64}$",
         "required": ["path"],
         "properties": {
-          "path": { "type": "string" },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)",
+            "description": "相对路径，不得以 / 开头"
+          },
           "triggers": { "type": "array", "items": { "type": "string" } },
           "path_extract_regex": { "type": "string" },
           "description": { "type": "string" },
@@ -167,7 +283,10 @@
               { "type": "boolean", "enum": [false] }
             ]
           },
-          "auto_write_template": { "type": "string" }
+          "auto_write_template": { "type": "string" },
+          "steering": {
+            "$ref": "#/definitions/steeringDocConfig"
+          }
         },
         "additionalProperties": false
       }
@@ -185,6 +304,29 @@
           { "type": "string", "enum": ["disabled"] }
         ]
       }
+    }
+  },
+  "definitions": {
+    "steeringDocConfig": {
+      "type": "object",
+      "description": "v5.9：单文档的 steering 注入配置",
+      "properties": {
+        "inject": {
+          "type": "boolean",
+          "description": "true 注入 / false 不注入（默认 false）"
+        },
+        "inclusion": {
+          "type": "string",
+          "enum": ["always", "fileMatch"],
+          "description": "always（始终注入）/ fileMatch（匹配文件时注入，仅对 Kiro/Cursor wrapper 类有效）"
+        },
+        "globs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "fileMatch 时生效的文件匹配规则"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,

@@ -8,7 +8,8 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"/></a>
     <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/protocol-MCP-green.svg" alt="MCP"/>
-    <img src="https://img.shields.io/badge/工具数-18-orange.svg" alt="Tools"/>
+    <img src="https://img.shields.io/badge/工具数-19-orange.svg" alt="Tools"/>
+
   </p>
 </p>
 
@@ -18,7 +19,7 @@
 
 **mcp-doc-guardian 是一个以 Agent 为核心驱动的文档管理系统。**
 
-它不是一个脚本，也不是一个 lint 工具——它通过 MCP 协议，把文档管理能力直接注入到你的 AI Agent（CodeBuddy / Cursor / Claude Code 等）中，让 Agent 具备：
+它不是一个脚本，也不是一个 lint 工具——它通过 MCP 协议，把文档管理能力直接注入到你的 AI Agent（CodeBuddy / Cursor / Claude Code / Trae / Kiro / Windsurf / Cline 等）中，让 Agent 具备：
 
 - 主动感知代码变更，判断文档是否需要更新
 - 自动检测接口、数据库、页面等维度的文档漂移
@@ -55,6 +56,7 @@ AI：  [调用 check_api_sync]
 
 | 能力 | 说明 |
 |------|------|
+| **文档自动注入到 AI 工具（Steering）** | 生成/更新文档时，自动将文档内容写入你已安装的 AI 工具的项目级规则文件（Kiro / Cursor / CodeBuddy / Claude Code / Trae / Cline / Windsurf），让 AI 每次对话自动感知项目背景，无需手动提示 |
 | **API 文档同步检测** | 扫描代码里的 Controller / HTTP 调用，与 `api.md` 逐行对比，精确定位哪个接口缺少文档 |
 | **数据库文档同步检测** | 扫描 Entity / Mapper / SQL 迁移文件，与 `database.md` 比对，检测新增字段、新增表是否已记录 |
 | **草稿标记扫描** | 全库扫描 `[Draft]` / `[TODO]` 等待完成的文档标记，汇总成待处理清单 |
@@ -79,7 +81,7 @@ AI：  [调用 check_api_sync]
 
 ---
 
-## 全部 18 个工具
+## 全部 19 个工具
 
 > 这些工具由 Agent 按需调用，你通常只需要用自然语言描述需求即可。
 
@@ -114,6 +116,7 @@ AI：  [调用 check_api_sync]
 | `project_doc_health` | 单项目质量检查 | 输出文档覆盖率评分 + SOP 合规检测结果 |
 | `apply_doc_patch` | Agent 写文档时 | 向指定文档节点写入存根内容（需 `allow_doc_write` 开启）|
 | `project_change_release` | 发版时 | 合并所有 pending changelog 到主 CHANGELOG，生成版本记录 |
+| `sync_steering` | 手动刷新自定义指令 | 将指定文档内容写入指定 AI 工具的规则文件；支持 `cli` / `doc_types` 多选过滤，以及 `dry_run` 预览模式 |
 
 </details>
 
@@ -149,13 +152,116 @@ AI：  [调用 check_api_sync]
 | 发起一个变更提案 | `请为 my-server 发起变更提案，标题：新增订单接口` |
 | 查看所有变更单进度 | `请列出 my-server 的所有变更单` |
 | 归档已完成的变更 | `请归档 my-server 的变更单 CHG-001` |
+| 刷新所有工具的自定义指令 | `sync steering` |
 | 认领一个 pending 文档任务 | `请认领 my-server 的 pending 文档任务` |
 
 ---
 
-## 配置文件
+## 各 CLI 自定义指令更新机制与注意事项
+
+doc-guardian 会在生成/更新文档时，自动调用 `syncAllClis` 写入各 AI 工具的规则文件。不同工具的更新机制不同，使用前请了解以下注意事项：
+
+### 写入方式对比
+
+| AI 工具 | 规则文件路径 | 写入方式 | 文档更新后是否需要重新 sync |
+|--------|------------|---------|--------------------------|
+| **Kiro** | `.kiro/steering/<doc>.md` | 内联副本（含 frontmatter） | **需要**手动 `sync steering` |
+| **Cursor** | `.cursor/rules/<doc>.mdc` | 内联副本（含 frontmatter） | **需要**手动 `sync steering` |
+| **CodeBuddy** | `.codebuddy/rules/<doc>.md` | 软链接 → 源文档 | **不需要**，自动生效 |
+| **Claude Code** | `CLAUDE.md`（项目根）| 追加 `@引用` 块 | **不需要**，Claude 每次读取最新源文件 |
+| **Trae** | `.trae/rules/project_rules.md` | 追加引用路径行 | **部分**，Trae 1.x 支持有限，大文件有截断风险；若不生效可改用 `strategy: inline` |
+| **Cline** | `.clinerules` | 追加引用路径行 | **不需要**（默认）；若注入后不生效，可改用 `strategy: inline` |
+| **Windsurf** | `.windsurfrules` | 追加引用路径行 | **不需要**（默认）；若注入后不生效，可改用 `strategy: inline` |
+
+### Kiro / Cursor：内联副本模式
+
+- **原理**：将源文档内容 + YAML frontmatter 合并写入 wrapper 文件，AI 工具读取 wrapper 而非源文档
+- **注意事项**：
+  - 每次执行 `apply_doc_patch` 或 `doc_cold_start` 时会自动刷新
+  - 手动编辑了源文档后需主动发送 `sync steering` 来刷新 wrapper
+  - 文件头部有 `<!-- generated at <time>, source-hash: <hash> -->` 注释，用于标识是 doc-guardian 生成的，不要手动删除
+  - 若文件已存在且不含上述注释（即用户手动创建的），doc-guardian 默认跳过，不会覆盖（需加 `force: true` 才会覆盖）
+  - Kiro 的 `globs` 和 `inclusion: fileMatch` 字段会写入 frontmatter，控制该规则文件在哪些文件上生效
+- **兼容度**：Kiro steering 机制需 Kiro 0.2+ 版本，旧版本不读取 `.kiro/steering/` 目录
+
+### CodeBuddy：软链接模式
+
+- **原理**：在 `.codebuddy/rules/` 目录创建指向源文档的软链接，CodeBuddy 读取软链接时自动跟随到源文档
+- **注意事项**：
+  - Windows 系统若无软链接权限（EPERM），自动降级为内联副本
+  - 软链接只创建一次，源文档的任何修改均实时反映，无需再次 sync
+- **兼容度**：需要 CodeBuddy 支持项目规则文件（`.codebuddy/rules/`）的版本
+
+### Claude Code：`@引用` 模式
+
+- **原理**：在项目根 `CLAUDE.md` 的 marker 块中追加 `@<doc_path>` 语法，Claude 会主动读取引用文件
+- **注意事项**：
+  - 如果项目根目录没有 `CLAUDE.md`，doc-guardian 会自动创建
+  - 使用 `<!-- doc-guardian:<docType> -->` 作为 marker，重复执行幂等（不重复追加）
+  - 引用语法是 Claude Code CLI 特有的，不适用于 Claude 网页版
+- **兼容度**：需要 Claude Code CLI（`claude` 命令）在 PATH 中可被检测到，或项目根已有 `CLAUDE.md`
+
+### Trae / Cline / Windsurf：追加引用行模式
+
+- **原理**：向规则文件末尾追加 `# doc-guardian:<docType>: @<path>` 引用行，幂等操作，重复执行不会重复追加
+- **注意事项**：
+  - **Trae 1.x**：对 `@<path>` 引用支持有限，大文件有截断风险；若注入后不生效，改用 `custom_cli` + `strategy: inline`
+  - **Cline / Windsurf**：若注入后 AI 未感知文档内容，说明该版本不跟随 `@path` 引用；降级方案：在 `custom_cli` 中配置 `strategy: inline`，源文档更新后手动发送 `sync steering` 重新注入
+- **Cline 的检测方式**：检测 `~/.vscode/extensions/saoudrizwan.claude-dev*` 目录是否存在（基于 VSCode 扩展）
+- **Trae 的检测方式**：检测 `~/.trae` 目录或 `trae` 命令是否存在
+
+### 全局 `inclusion` 与 `globs` 注意事项
+
+`inclusion` 和 `globs` 字段**仅对 Kiro / Cursor（内联 wrapper 类）有效**，控制 wrapper 文件的加载时机（始终 / 匹配文件时）。对 append 类工具（Trae / Cline / Windsurf / Claude Code），这两个字段被忽略，规则文件始终随 AI 对话加载。
+
+### 自定义不支持的工具
+
+若你使用的工具不在内置列表中，可通过 `.doc-guard.yaml` 的 `custom_cli` 字段手动扩展，支持三种策略（详见 [yaml 配置指南](./docs/doc-guard-yaml-guide.md)）：
+
+| 策略 | 适用场景 |
+|------|---------|
+| `append` | 单一规则文件，支持 `@引用` 语法 |
+| `symlink` | 目录型规则，工具跟随软链接 |
+| `inline` | 不支持引用语法，需完整内容注入（需手动 sync）|
+
+---
 
 每个业务项目根目录下放一个 `.doc-guard.yaml`，告诉 Agent 这个项目的结构和文档路径。
+
+### 开启 Steering 注入（可选）
+
+在 `.doc-guard.yaml` 中添加顶层 `steering:` 块，让文档更新时自动写入你已安装的 AI 工具规则文件：
+
+```yaml
+steering:
+  enabled: true
+  cli:                   # 留空则自动检测本机已安装的工具
+    - kiro
+    - cursor
+    - codebuddy
+
+docs:
+  overview:
+    path: docs/overview.md
+    steering:
+      inject: true       # 必须显式设为 true，默认不注入
+      inclusion: always  # always | fileMatch（仅 Kiro / Cursor 有效）
+  api:
+    path: docs/api.md
+    steering:
+      inject: true
+      inclusion: fileMatch
+      globs: ["src/**/*.ts"]   # 仅 Kiro / Cursor 有效
+  changelog:
+    path: docs/changelogs/CHANGELOG.md
+    pending_path: docs/changelogs/pending
+    steering:
+      inject: false      # 默认值，可省略
+```
+
+配置好后，执行 `doc_cold_start` 或 `apply_doc_patch` 时会**自动触发**注入；也可随时发送 `sync steering` 手动刷新。各工具的写入路径和策略详见["各 CLI 自定义指令更新机制与注意事项"](#各-cli-自定义指令更新机制与注意事项)章节。
+
+> **注意**：`inject` 字段默认为 `false`，只有显式设为 `true` 的文档才会被注入，防止不必要的文档污染 AI 上下文。
 
 ### 最简配置（直接可用）
 
